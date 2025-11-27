@@ -6,6 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 // --- IMPORT ANIMATIONS ---
 import { tabContentVar } from '../animations/variants';
 
+// --- IMPORT EFFECTS ---
+import HackerText from './effects/HackerText';
+import Typewriter from './effects/Typewriter';
+
 const OutputPanel = () => {
   const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'reasoning'
 
@@ -45,7 +49,8 @@ const OutputPanel = () => {
             transition: 'all 0.2s'
           }}
         >
-          TERMINAL
+          {/* HACKER TEXT EFFECT: Decrypts "TERMINAL" when loaded */}
+          <HackerText text="TERMINAL" />
         </Button>
 
         {/* AI Reasoning Tab Button */}
@@ -67,7 +72,8 @@ const OutputPanel = () => {
             transition: 'all 0.2s'
           }}
         >
-          AI REASONING
+          {/* HACKER TEXT EFFECT: Decrypts "AI REASONING" */}
+          <HackerText text="AI REASONING" />
         </Button>
       </Box>
       
@@ -84,7 +90,7 @@ const OutputPanel = () => {
               exit="exit"
               style={{ padding: 16 }}
             >
-              {/* TERMINAL CONTENT */}
+              {/* TERMINAL CONTENT (Static error logs) */}
               <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72', lineHeight: 1.6 }}>
                 <span style={{ color: '#8b949e' }}>$ python3 script.py</span><br/>
                 &gt; TypeError: cannot unpack non-iterable int object<br/>
@@ -102,13 +108,13 @@ const OutputPanel = () => {
               exit="exit"
               style={{ padding: 16 }}
             >
-              {/* AI REASONING CONTENT */}
+              {/* AI REASONING CONTENT (Animated Typewriter) */}
               <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', lineHeight: 1.6 }}>
-                 &gt; [INFO] Analyzing execution stack trace...<br/>
-                 &gt; [WARN] Identified variable type mismatch at line 14.<br/>
-                 &gt; [THINKING] The user is trying to swap variables but used assignment.<br/>
-                 &gt; [ACTION] Generating Patch #1: Implementing tuple swap.<br/>
-                 &gt; [SUCCESS] Patch generated. Ready to review.
+                 <Typewriter 
+                   speed={15}
+                   delay={200}
+                   text="> [INFO] Analyzing execution stack trace... | > [WARN] Identified variable type mismatch at line 14. | > [THINKING] The user is trying to swap variables but used assignment. | > [ACTION] Generating Patch #1: Implementing tuple swap. | > [SUCCESS] Patch generated. Ready to review."
+                 />
               </Box>
             </motion.div>
           )}
