@@ -1,88 +1,179 @@
-// src/App.jsx
-import React from 'react';
-import { Box, Paper, Typography, Button, Stack, Chip } from '@mui/material';
-import { Play, Cpu, FileCode } from 'lucide-react';
+import React, { useState } from 'react';
+import { Box, Typography, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Play, Cpu, Code, GitCompare, Sparkles } from 'lucide-react';
 import Editor from "@monaco-editor/react";
-import AiOverlay from './components/AiOverlay'; // Import your animation
 
-// DUMMY DATA (Use this until your teammate connects the API)
-const isAiWorking = true; // Toggle this to false to hide the animation
+import Sidebar from './components/Sidebar';
+import OutputPanel from './components/OutputPanel';
+import AiOverlay from './components/AiOverlay';
+import DiffView from './components/DiffView'; 
+import SuccessBanner from './components/SuccessBanner';
+
+// --- MOCK DATA: Simulates the evolution of code for the Diff Viewer ---
+const mockHistory = [
+  // VERSION 1: Broken Code (Original)
+  `def bubble_sort(arr):
+    n = len(arr)
+    # Traverse through all array elements
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                # ERROR: This just overwrites, doesn't swap!
+                arr[j] = arr[j+1]`,
+  
+  // VERSION 2: Intermediate Patch (AI fixed logic but missed variable)
+  `def bubble_sort(arr):
+    n = len(arr)
+    # Traverse through all array elements
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                # AI Attempt 1: Using temp variable
+                temp = arr[j]
+                arr[j] = arr[j+1]
+                # ERROR: Forgot to assign temp back to arr[j+1]`,
+
+  // VERSION 3: Final Correct Fix
+  `def bubble_sort(arr):
+    n = len(arr)
+    # Traverse through all array elements
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                # FIXED: Pythonic tuple swap
+                arr[j], arr[j+1] = arr[j+1], arr[j]`
+];
 
 function App() {
+  const [viewMode, setViewMode] = useState('editor'); // 'editor' | 'diff'
+  const [isFixing, setIsFixing] = useState(false);    // Laser Animation state
+  const [showSuccess, setShowSuccess] = useState(false); // Success Banner state
+  
+  // EDITOR STATE: Default text or loaded file content
+  const [code, setCode] = useState(`# ------------------------------------
+# PASTE YOUR BROKEN PYTHON CODE HERE
+# OR OPEN A PROJECT FOLDER ON THE LEFT
+# ------------------------------------
+
+def buggy_function(arr):
+    # Example: This will cause an IndexError
+    for i in range(len(arr) + 1):
+        print(arr[i])
+`);
+
+  // Handler: When a file is clicked in Sidebar, update Editor
+  const handleFileSelect = (newCode) => {
+    setCode(newCode);
+    setViewMode('editor'); // Ensure we see the code
+  };
+
+  // Handler: Simulate the AI Repair Process
+  const handleStartRepair = () => {
+    setShowSuccess(false);
+    setIsFixing(true);
+    
+    // Fake a 3-second delay for the "AI Scan"
+    setTimeout(() => {
+      setIsFixing(false);
+      setShowSuccess(true);
+    }, 3000);
+  };
+
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', color: 'text.primary' }}>
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       
-      {/* 1. NAVBAR */}
-      <Box sx={{ height: 60, borderBottom: '1px solid #30363d', display: 'flex', alignItems: 'center', px: 3, justifyContent: 'space-between' }}>
-        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
-          <Cpu size={20} /> AutoBugFix_
+      {/* NAVBAR */}
+      <Box sx={{ 
+        height: 64, 
+        borderBottom: '1px solid rgba(48, 54, 61, 0.5)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        px: 3, 
+        justifyContent: 'space-between',
+        bgcolor: 'rgba(22, 27, 34, 0.8)', 
+        backdropFilter: 'blur(10px)',
+        position: 'sticky', top: 0, zIndex: 10
+      }}>
+        {/* Logo */}
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'primary.main', fontWeight: 800, letterSpacing: 1 }}>
+          <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} className="text-purple-400"/>
         </Typography>
-        <Button variant="contained" startIcon={<Play size={16} />}>
-          Start Auto-Repair
+
+        {/* Center Toggles */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(e, newMode) => newMode && setViewMode(newMode)}
+          size="small"
+          sx={{ 
+            '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 3 }, 
+            '& .Mui-selected': { bgcolor: '#1f6feb !important', color: 'white !important', borderColor: '#1f6feb !important' } 
+          }}
+        >
+          <ToggleButton value="editor"><Code size={16} style={{ marginRight: 8 }} /> Code</ToggleButton>
+          <ToggleButton value="diff"><GitCompare size={16} style={{ marginRight: 8 }} /> Diff</ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* Action Button */}
+        <Button 
+          variant="contained" 
+          startIcon={!isFixing && <Play size={18} />} 
+          disabled={isFixing}
+          onClick={handleStartRepair}
+          sx={{ 
+            fontWeight: 'bold', borderRadius: 2, px: 3, py: 1, textTransform: 'none', fontSize: '0.9rem',
+            boxShadow: '0 0 15px rgba(47, 129, 247, 0.4)',
+            transition: 'all 0.3s ease',
+            '&:hover': { boxShadow: '0 0 25px rgba(47, 129, 247, 0.6)' }
+          }}
+        >
+          {isFixing ? 'AI Repairing...' : 'Start Auto-Repair'}
         </Button>
       </Box>
 
-      {/* 2. MAIN GRID */}
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* MAIN CONTENT GRID */}
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
         
-        {/* COLUMN A: Sidebar (History) */}
-        <Paper square sx={{ width: 250, borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column' }}>
-          <Box p={2} borderBottom="1px solid #30363d">
-            <Typography variant="subtitle2" color="text.secondary">FILES</Typography>
-            <Stack direction="row" spacing={1} mt={1} alignItems="center" sx={{ color: 'white', cursor: 'pointer' }}>
-              <FileCode size={16} color="#2f81f7"/> 
-              <Typography variant="body2">script.py</Typography>
-            </Stack>
-          </Box>
-          <Box p={2} flex={1}>
-            <Typography variant="subtitle2" color="text.secondary" mb={2}>REPAIR HISTORY</Typography>
-            {/* Mock Timeline */}
-            <Stack spacing={2}>
-              <Chip label="v1.0 Original" size="small" variant="outlined" sx={{ justifyContent: 'flex-start' }} />
-              <Chip label="v1.1 Patching..." size="small" color="secondary" sx={{ justifyContent: 'flex-start' }} />
-            </Stack>
-          </Box>
-        </Paper>
+        {/* 1. LEFT SIDEBAR (File Explorer) */}
+        <Sidebar onFileSelect={handleFileSelect} />
 
-        {/* COLUMN B: The Code Editor (The Stage) */}
-        <Box sx={{ flex: 1, position: 'relative', borderRight: '1px solid #30363d' }}>
+        {/* 2. CENTER STAGE (Editor / Diff) */}
+        <Box sx={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
           
-          {/* THE AI ANIMATION OVERLAY */}
-          {isAiWorking && <AiOverlay />}
+          {/* Laser Animation Layer */}
+          {isFixing && <AiOverlay />}
 
-          <Editor
-            height="100%"
-            defaultLanguage="python"
-            theme="vs-dark"
-            defaultValue="# Paste broken code here..."
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              padding: { top: 20 }
-            }}
-          />
+          {/* Conditional View */}
+          {viewMode === 'editor' ? (
+             <Editor
+               height="100%"
+               defaultLanguage="python"
+               theme="vs-dark"
+               value={code}                  // State binding
+               onChange={(val) => setCode(val)} // State update
+               options={{ 
+                 minimap: { enabled: false }, 
+                 fontSize: 15, 
+                 fontFamily: 'JetBrains Mono',
+                 padding: { top: 24, bottom: 24 },
+                 scrollBeyondLastLine: false,
+                 smoothScrolling: true,
+                 cursorBlinking: "smooth"
+               }}
+             />
+          ) : (
+             // Pass the mock history to the Diff Viewer
+             <DiffView history={mockHistory} />
+          )}
         </Box>
 
-        {/* COLUMN C: Output Console */}
-        <Paper square sx={{ width: 350, display: 'flex', flexDirection: 'column', bgcolor: '#0d1117' }}>
-          <Box p={1.5} borderBottom="1px solid #30363d" bgcolor="#161b22">
-            <Typography variant="subtitle2" fontWeight="bold">TERMINAL OUTPUT</Typography>
-          </Box>
-          <Box p={2} sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72' }}>
-            {/* Mock Error */}
-            > TypeError: cannot unpack non-iterable int object<br/>
-            > at line 14, in bubble_sort
-          </Box>
-          
-          <Box p={1.5} borderTop="1px solid #30363d" borderBottom="1px solid #30363d" bgcolor="#161b22" mt="auto">
-            <Typography variant="subtitle2" fontWeight="bold" color="secondary.main">AI REASONING</Typography>
-          </Box>
-          <Box p={2} sx={{ height: 200, fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7' }}>
-             > Analyzing stack trace...<br/>
-             > Identified variable type mismatch.<br/>
-             > Generating Patch #1...
-          </Box>
-        </Paper>
+        {/* 3. RIGHT PANEL (Terminal) */}
+        <OutputPanel />
+
+        {/* 4. SUCCESS BANNER (Toast) */}
+        {showSuccess && (
+          <SuccessBanner onApply={() => setViewMode('diff')} onClose={() => setShowSuccess(false)} />
+        )}
 
       </Box>
     </Box>
