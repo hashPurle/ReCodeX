@@ -2,7 +2,8 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from engine.repair_loop import start_repair_session
+from backend.engine.repair_loop import start_repair_session
+
 
 app = FastAPI(title="DevForge Autonomous Debugger")
 

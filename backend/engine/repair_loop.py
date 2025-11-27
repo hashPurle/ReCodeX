@@ -1,7 +1,7 @@
 import asyncio
-from core.sandbox import execute_code
-from core.parser import extract_error_context
-from engine.patch_generator import generate_patch
+from backend.core.sandbox import execute_code
+from backend.core.parser import extract_error_context
+from backend.engine.patch_generator import generate_patch
 
 async def start_repair_session(code: str, max_iterations: int = 3):
     """
