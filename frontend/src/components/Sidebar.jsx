@@ -4,7 +4,6 @@ import { FileCode, Folder, FolderOpen, ChevronRight, ChevronDown, XCircle, FileJ
 import { motion, AnimatePresence } from 'framer-motion';
 
 // --- IMPORT ANIMATIONS ---
-// Make sure src/animations/variants.js exists!
 import { containerVar, itemVar } from '../animations/variants';
 
 // --- HELPER: Build Tree from File List ---
@@ -15,7 +14,10 @@ const buildFileTree = (files) => {
     // Filter out node_modules and hidden files
     if (file.webkitRelativePath.includes('node_modules') || file.name.startsWith('.')) return;
 
-    const parts = file.webkitRelativePath.split('/');
+    // FIX: Fallback to file.name if webkitRelativePath is empty
+    const path = file.webkitRelativePath || file.name;
+    const parts = path.split('/');
+    
     let currentLevel = root;
 
     parts.forEach((part, index) => {
@@ -47,6 +49,7 @@ const FileTreeNode = ({ node, depth, onFileClick }) => {
   
   const getIcon = (name, type, isOpen) => {
     if (type === 'folder') return isOpen ? <FolderOpen size={14} color="#58a6ff" /> : <Folder size={14} color="#58a6ff" />;
+    if (!name) return <File size={14} color="#c9d1d9" />; // Safety for empty names
     if (name.endsWith('.js') || name.endsWith('.jsx')) return <FileCode size={14} color="#f1e05a" />;
     if (name.endsWith('.css')) return <FileType size={14} color="#563d7c" />;
     if (name.endsWith('.json')) return <FileJson size={14} color="#e34c26" />;
@@ -66,9 +69,8 @@ const FileTreeNode = ({ node, depth, onFileClick }) => {
     <Box sx={{ userSelect: 'none' }}>
       {/* ANIMATED ROW ITEM */}
       <motion.div
-        variants={itemVar} // Apply Fade In Variant
-        // No initial/animate here; the Parent Container controls the stagger!
-        whileHover={{ x: 4, color: "#58a6ff" }} // Hover Effect: Slide right + Blue
+        variants={itemVar} 
+        whileHover={{ x: 4, color: "#58a6ff" }} 
         onClick={handleClick}
         style={{ 
           display: 'flex', 
@@ -79,7 +81,7 @@ const FileTreeNode = ({ node, depth, onFileClick }) => {
           paddingLeft: `${depth * 12 + 8}px`, 
           paddingRight: 8,
           cursor: 'pointer',
-          color: '#c9d1d9',
+          color: '#c9d1d9', // Base color
           fontSize: '0.85rem',
           fontFamily: 'monospace',
           transition: 'background 0.1s' 
@@ -90,13 +92,24 @@ const FileTreeNode = ({ node, depth, onFileClick }) => {
              isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />
           )}
         </Box>
+        
         {getIcon(node.name, node.type, isOpen)}
-        <Typography variant="body2" sx={{ fontFamily: 'inherit', fontSize: 'inherit', pt: 0.2 }} noWrap>
-          {node.name}
+        
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'inherit', 
+            fontSize: 'inherit', 
+            pt: 0.2,
+            color: 'inherit' // Ensures it takes the parent's light grey/blue hover color
+          }} 
+          noWrap
+        >
+          {node.name || "Untitled"} 
         </Typography>
       </motion.div>
 
-      {/* RECURSIVE CHILDREN (Animated Open/Close) */}
+      {/* RECURSIVE CHILDREN */}
       <AnimatePresence>
         {node.type === 'folder' && isOpen && (
           <motion.div
@@ -122,6 +135,8 @@ const Sidebar = ({ onFileSelect }) => {
   const fileInputRef = useRef(null);
 
   const handleFolderUpload = (event) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    
     const uploadedFiles = Array.from(event.target.files);
     const tree = buildFileTree(uploadedFiles);
     
@@ -139,7 +154,7 @@ const Sidebar = ({ onFileSelect }) => {
   const handleFileClick = (file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      onFileSelect(e.target.result, file.name);
+      onFileSelect(e.target.result, file.name); // Pass name to update title if needed
     };
     reader.readAsText(file);
   };
@@ -189,7 +204,7 @@ const Sidebar = ({ onFileSelect }) => {
         </Button>
       </Box>
 
-      {/* TREE VIEW CONTAINER */}
+      {/* TREE VIEW */}
       <Box flex={1} overflow="auto" sx={{ '&::-webkit-scrollbar': { width: '4px' } }}>
         <Box pt={1}>
           {fileTree.length === 0 ? (
@@ -197,7 +212,6 @@ const Sidebar = ({ onFileSelect }) => {
               No project loaded.
             </Typography>
           ) : (
-            // WRAPPER WITH CONTAINER VARIANT (Triggers the Stagger Effect)
             <motion.div
               variants={containerVar}
               initial="hidden"
