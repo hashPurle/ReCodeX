@@ -1,30 +1,43 @@
 // src/components/AiOverlay.jsx
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Cpu } from 'lucide-react';
 
 const AiOverlay = () => {
   return (
-    <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-center items-center bg-black/50 backdrop-blur-[2px]">
+    <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-center items-center overflow-hidden bg-[#0d1117]/60 backdrop-blur-[1px]">
       
-      {/* The Text Pulse */}
+      {/* Central Pulsing Status */}
       <motion.div 
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: 1 }}
-        transition={{ repeat: Infinity, duration: 1, repeatType: "reverse" }}
-        className="text-blue-400 font-mono text-lg font-bold mb-4 bg-gray-900 px-4 py-2 rounded border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-[#161b22] border border-blue-500/30 px-6 py-3 rounded-full shadow-[0_0_30px_rgba(59,130,246,0.3)] flex items-center gap-3"
       >
-        AI DEBUGGER RUNNING...
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Cpu size={20} className="text-blue-400" />
+        </motion.div>
+        <motion.span 
+          animate={{ opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-blue-100 font-mono font-semibold text-sm tracking-wider"
+        >
+          AI NEURAL SCAN IN PROGRESS...
+        </motion.span>
       </motion.div>
 
-      {/* The Scanning Laser Line */}
+      {/* The Electric Laser Scanner */}
       <motion.div
-        className="absolute w-full h-[2px] bg-blue-500 shadow-[0_0_20px_#3b82f6]"
-        initial={{ top: "0%" }}
-        animate={{ top: "100%" }}
+        className="absolute w-full h-[3px] bg-gradient-to-r from-transparent via-blue-500 to-transparent"
+        style={{ boxShadow: '0 0 15px #3b82f6, 0 0 30px #3b82f6' }}
+        initial={{ top: "-10%" }}
+        animate={{ top: "110%" }}
         transition={{ 
-          duration: 2, 
+          duration: 1.8, 
           repeat: Infinity, 
-          ease: "linear" 
+          ease: "easeInOut" 
         }}
       />
     </div>

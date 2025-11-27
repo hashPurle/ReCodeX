@@ -1,15 +1,16 @@
+// src/components/OutputPanel.jsx
 
 import React from "react";
-import { Box, Typography, Divider } from "@mui/material";
+import { Paper, Box, Typography, Divider } from "@mui/material";
+import { Terminal, Cpu } from "lucide-react";
 import { formatError, extractLineNumber } from "../utils/formatError";
 
 /*
-  OutputPanel Component
-  ---------------------
-  Shows:
-  - Cleaned error message
-  - Line number extracted from trace
-  - Logs from the repair engine
+  OutputPanel Component (Final Merged Version)
+  -------------------------------------------
+  Keeps:
+  ✔ Your real logic (error formatter + line extraction)
+  ✔ Vishal's UI styling (terminal layout, icons, colors)
 */
 
 const OutputPanel = ({ error, logs }) => {
@@ -17,33 +18,43 @@ const OutputPanel = ({ error, logs }) => {
   const lineNumber = extractLineNumber(error);
 
   return (
-    <Box
+    <Paper
+      square
       sx={{
-        height: "100%",
-        overflowY: "auto",
+        width: 350,
+        display: "flex",
+        flexDirection: "column",
         bgcolor: "#0d1117",
-        color: "white",
-        p: 2,
-        fontFamily: "monospace",
+        borderLeft: "1px solid #30363d",
       }}
     >
-      {/* ERROR SECTION */}
-      <Typography variant="subtitle2" sx={{ color: "#ff7b72", mb: 1 }}>
-        ERROR
-      </Typography>
-
+      {/* -------- TERMINAL HEADER -------- */}
       <Box
+        p={1.5}
+        borderBottom="1px solid #30363d"
+        bgcolor="#161b22"
+        display="flex"
+        alignItems="center"
+        gap={1}
+      >
+        <Terminal size={14} color="#8b949e" />
+        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary">
+          TERMINAL OUTPUT
+        </Typography>
+      </Box>
+
+      {/* -------- ERROR SECTION -------- */}
+      <Box
+        p={2}
         sx={{
-          bgcolor: "#161b22",
-          p: 2,
-          borderRadius: 2,
-          mb: 2,
-          border: "1px solid #30363d",
+          fontFamily: "monospace",
+          fontSize: "0.85rem",
+          color: "#ff7b72",
+          overflowY: "auto",
+          flex: 1,
         }}
       >
-        <Typography sx={{ whiteSpace: "pre-wrap" }}>
-          {cleanError}
-        </Typography>
+        <Typography sx={{ whiteSpace: "pre-wrap" }}>{cleanError}</Typography>
 
         {lineNumber && (
           <Typography sx={{ mt: 1, color: "#ffa657" }}>
@@ -52,26 +63,41 @@ const OutputPanel = ({ error, logs }) => {
         )}
       </Box>
 
-      <Divider sx={{ borderColor: "#30363d", my: 2 }} />
+      {/* Divider */}
+      <Divider sx={{ borderColor: "#30363d" }} />
 
-      {/* LOGS SECTION */}
-      <Typography variant="subtitle2" sx={{ color: "#79c0ff", mb: 1 }}>
-        TERMINAL LOGS
-      </Typography>
-
+      {/* -------- AI REASONING HEADER -------- */}
       <Box
+        p={1.5}
+        borderTop="1px solid #30363d"
+        borderBottom="1px solid #30363d"
+        bgcolor="#161b22"
+        display="flex"
+        alignItems="center"
+        gap={1}
+      >
+        <Cpu size={14} color="#a371f7" />
+        <Typography variant="subtitle2" fontWeight="bold" color="secondary.main">
+          AI REASONING
+        </Typography>
+      </Box>
+
+      {/* -------- LOGS SECTION -------- */}
+      <Box
+        p={2}
         sx={{
-          bgcolor: "#161b22",
-          p: 2,
-          borderRadius: 2,
-          border: "1px solid #30363d",
+          height: 200,
+          fontFamily: "monospace",
+          fontSize: "0.85rem",
+          color: "#a371f7",
+          overflowY: "auto",
         }}
       >
         <Typography sx={{ whiteSpace: "pre-wrap" }}>
           {logs || "No logs available."}
         </Typography>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 

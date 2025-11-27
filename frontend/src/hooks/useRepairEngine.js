@@ -1,112 +1,100 @@
+// src/hooks/useRepairEngine.js
+
 import { useState } from "react";
-import { useApi } from "./useApi";
+import { runCode, repairCode } from "../utils/api";
 
 /*
-  This hook manages the entire repair workflow:
+  Engine responsibilities:
+  ------------------------
+  ✔ Store active code
+  ✔ Run code (mock or backend)
+  ✔ Start full repair (mock or backend)
+  ✔ Maintain:
+      • error messages
+      • logs
+      • patch history
+      • final repaired code
+  ✔ Provide clean API for App.jsx
 */
 
 export const useRepairEngine = () => {
-  const { executeCode, createPatch, repairAutomatically } = useApi();
+  const [code, setCode] = useState("");
 
-  // ---------- GLOBAL STATE ----------
-  const [originalCode, setOriginalCode] = useState("");
-  const [currentCode, setCurrentCode] = useState("");
+  const [error, setError] = useState("");
+  const [logs, setLogs] = useState("");
+  const [history, setHistory] = useState([]); // patch versions
   const [finalCode, setFinalCode] = useState("");
 
-  const [logs, setLogs] = useState("");
-  const [error, setError] = useState("");
-  const [patch, setPatch] = useState("");
-
-  const [iterations, setIterations] = useState([]); // iteration-wise results
-  const [repairStep, setRepairStep] = useState(0);  // step number for UI animations
-  const [loading, setLoading] = useState(false);     // loader for UI
-
-  // ---------- 1. SET INITIAL CODE ----------
-  const loadCode = (code) => {
-    setOriginalCode(code);
-    setCurrentCode(code);
+  /* -----------------------------------------------------------
+     1. LOAD CODE (Called on every keystroke in App.jsx)
+  ------------------------------------------------------------ */
+  const loadCode = (newCode) => {
+    setCode(newCode);
   };
 
-  // ---------- 2. RUN CODE (calls /run) ----------
+  /* -----------------------------------------------------------
+     2. RUN CODE ON BACKEND (or mock)
+  ------------------------------------------------------------ */
   const runCurrentCode = async () => {
-    setLoading(true);
+    if (!code.trim()) return;
 
-    const result = await executeCode(currentCode);
+    const res = await runCode({ code });
 
-    setLogs(result.logs || "");
-    setError(result.error || "");
-    setLoading(false);
+    setError(res.error || "");
+    setLogs(res.logs || []);
 
-    return result;
+    return res;
   };
 
-  // ---------- 3. GENERATE PATCH (calls /patch) ----------
-  const generatePatchFromError = async () => {
-    if (!error) return null;
-
-    setLoading(true);
-
-    const result = await createPatch(logs, currentCode);
-
-    setPatch(result.patch || "");
-    setLoading(false);
-
-    return result;
-  };
-
-  // ---------- 4. APPLY PATCH LOCALLY ----------
-  const applyPatchLocally = (patchedCode) => {
-    if (!patchedCode) return;
-
-    setCurrentCode(patchedCode);
-  };
-
-  // ---------- 5. FULL AUTOMATIC REPAIR LOOP ----------
+  /* -----------------------------------------------------------
+     3. FULL AUTO-REPAIR LOOP (backend or mock)
+        Returns:
+        {
+           history: [v1, v2, v3],
+           finalCode: "...",
+           logs: [...],
+           error: null
+        }
+  ------------------------------------------------------------ */
   const startFullRepair = async (iterations = 3) => {
-    setLoading(true);
-    setRepairStep(1);
+    if (!code.trim()) return;
 
-    const result = await repairAutomatically(currentCode, iterations);
+    const result = await repairCode({
+      code,
+      iterations
+    });
 
-    setIterations(result.iterations || []);
+    // Update engine states
+    setHistory(result.history || []);
     setFinalCode(result.finalCode || "");
-    setRepairStep(2);
-
-    setLoading(false);
+    setLogs(result.logs || []);
+    setError(result.error || "");
 
     return result;
   };
 
-  // ---------- 6. RESET EVERYTHING ----------
-  const resetEngine = () => {
-    setOriginalCode("");
-    setCurrentCode("");
-    setFinalCode("");
-    setLogs("");
+  /* -----------------------------------------------------------
+     4. RESET ENGINE (optional)
+  ------------------------------------------------------------ */
+  const reset = () => {
     setError("");
-    setPatch("");
-    setIterations([]);
-    setRepairStep(0);
+    setLogs([]);
+    setHistory([]);
+    setFinalCode("");
   };
 
   return {
     // state
-    originalCode,
-    currentCode,
-    finalCode,
-    logs,
+    code,
     error,
-    patch,
-    iterations,
-    repairStep,
-    loading,
+    logs,
+    history,
+    finalCode,
 
-    // functions
+    // actions
     loadCode,
     runCurrentCode,
-    generatePatchFromError,
-    applyPatchLocally,
     startFullRepair,
-    resetEngine,
+    reset
   };
 };

@@ -1,106 +1,201 @@
 // src/App.jsx
-import React, { useEffect } from 'react';
-import { Box, Paper, Typography, Button, Stack, Chip } from '@mui/material';
-import { Play, Cpu, FileCode } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Box,
+  Typography,
+  Button,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+
+import { Play, Cpu, Code, GitCompare, Sparkles } from "lucide-react";
 import Editor from "@monaco-editor/react";
 
-import AiOverlay from './components/AiOverlay'; 
-import { useRepairEngine } from "./hooks/useRepairEngine";  // Your logic engine
+// Core Components
+import Sidebar from "./components/Sidebar";
+import OutputPanel from "./components/OutputPanel";
+import AiOverlay from "./components/AiOverlay";
+import DiffView from "./components/DiffView";
+import SuccessBanner from "./components/SuccessBanner";
+
+// Engine Logic (Your part)
+import { useRepairEngine } from "./hooks/useRepairEngine";
 
 function App() {
   const engine = useRepairEngine();
 
-  // TEMPORARY TESTING → This is for you (Frontend Dev 2)
-  useEffect(() => {
-    engine.loadCode("print('hello')");
+  const [viewMode, setViewMode] = useState("editor"); // "editor" | "diff"
+  const [isFixing, setIsFixing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-    engine.runCurrentCode().then((res) => {
-      console.log("RUN:", res);
-    });
+  const [code, setCode] = useState("# Paste your Python code here");
 
-    engine.startFullRepair(2).then((res) => {
-      console.log("REPAIR:", res);
-    });
-  }, []);
+  // ---------------------------------------------
+  // When clicking file in sidebar
+  // ---------------------------------------------
+  const handleFileSelect = (newCode) => {
+    setCode(newCode);
+    engine.loadCode(newCode);
+    setViewMode("editor");
+  };
 
-  const isAiWorking = false; // Vishal can toggle this for animation
+  // ---------------------------------------------
+  // Auto Repair → calls engine + shows animation
+  // ---------------------------------------------
+  const handleStartRepair = async () => {
+    setShowSuccess(false);
+    setIsFixing(true);
+
+    // Run engine repair (mock or backend)
+    await engine.startFullRepair();
+
+    // Animation delay
+    setTimeout(() => {
+      setIsFixing(false);
+      setShowSuccess(true); // Show “Fix Applied” banner
+    }, 1200);
+  };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', color: 'text.primary' }}>
-
-      {/* 1. NAVBAR */}
-      <Box sx={{ height: 60, borderBottom: '1px solid #30363d', display: 'flex', alignItems: 'center', px: 3, justifyContent: 'space-between' }}>
-        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'primary.main' }}>
-          <Cpu size={20} /> AutoBugFix_
-        </Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Play size={16} />}
-          onClick={() => engine.startFullRepair()}
+    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* --------------------------- NAVBAR --------------------------- */}
+      <Box
+        sx={{
+          height: 64,
+          borderBottom: "1px solid rgba(48, 54, 61, 0.5)",
+          display: "flex",
+          alignItems: "center",
+          px: 3,
+          justifyContent: "space-between",
+          bgcolor: "rgba(22, 27, 34, 0.8)",
+          backdropFilter: "blur(10px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        {/* Logo */}
+        <Typography
+          variant="h6"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            color: "primary.main",
+            fontWeight: 800,
+            letterSpacing: 1,
+          }}
         >
-          Start Auto-Repair
+          <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} />
+        </Typography>
+
+        {/* Center Toggle Buttons */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={(e, v) => v && setViewMode(v)}
+          size="small"
+          sx={{
+            "& .MuiToggleButton-root": {
+              color: "#8b949e",
+              borderColor: "#30363d",
+              px: 3,
+            },
+            "& .Mui-selected": {
+              bgcolor: "#1f6feb !important",
+              color: "white !important",
+              borderColor: "#1f6feb !important",
+            },
+          }}
+        >
+          <ToggleButton value="editor">
+            <Code size={16} style={{ marginRight: 8 }} /> Code
+          </ToggleButton>
+
+          <ToggleButton value="diff" disabled={!engine.history.length}>
+            <GitCompare size={16} style={{ marginRight: 8 }} /> Diff
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        {/* Start Auto-Repair Button */}
+        <Button
+          variant="contained"
+          startIcon={!isFixing && <Play size={18} />}
+          disabled={isFixing}
+          onClick={handleStartRepair}
+          sx={{
+            fontWeight: "bold",
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: "none",
+            fontSize: "0.9rem",
+            boxShadow: "0 0 15px rgba(47, 129, 247, 0.4)",
+            transition: "all 0.3s ease",
+            "&:hover": { boxShadow: "0 0 25px rgba(47, 129, 247, 0.6)" },
+          }}
+        >
+          {isFixing ? "AI Repairing..." : "Start Auto-Repair"}
         </Button>
       </Box>
 
-      {/* 2. MAIN GRID */}
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      {/* -------------------------- MAIN GRID -------------------------- */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {/* Sidebar */}
+        <Sidebar onFileSelect={handleFileSelect} />
 
-        {/* COLUMN A: Sidebar */}
-        <Paper square sx={{ width: 250, borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column' }}>
-          <Box p={2} borderBottom="1px solid #30363d">
-            <Typography variant="subtitle2" color="text.secondary">FILES</Typography>
-            <Stack direction="row" spacing={1} mt={1} alignItems="center" sx={{ color: 'white', cursor: 'pointer' }}>
-              <FileCode size={16} color="#2f81f7" />
-              <Typography variant="body2">script.py</Typography>
-            </Stack>
-          </Box>
+        {/* Editor / Diff */}
+        <Box
+          sx={{
+            flex: 1,
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {isFixing && <AiOverlay />}
 
-          <Box p={2} flex={1}>
-            <Typography variant="subtitle2" color="text.secondary" mb={2}>REPAIR HISTORY</Typography>
-            <Stack spacing={2}>
-              <Chip label="v1.0 Original" size="small" variant="outlined" sx={{ justifyContent: 'flex-start' }} />
-              <Chip label="v1.1 Patching..." size="small" color="secondary" sx={{ justifyContent: 'flex-start' }} />
-            </Stack>
-          </Box>
-        </Paper>
-
-        {/* COLUMN B: Editor */}
-        <Box sx={{ flex: 1, position: 'relative', borderRight: '1px solid #30363d' }}>
-          {isAiWorking && <AiOverlay />}
-          <Editor
-            height="100%"
-            defaultLanguage="python"
-            theme="vs-dark"
-            defaultValue="# Paste broken code here..."
-            options={{
-              minimap: { enabled: false },
-              fontSize: 14,
-              padding: { top: 20 }
-            }}
-            onChange={(value) => engine.loadCode(value)}
-          />
+          {viewMode === "editor" ? (
+            <Editor
+              height="100%"
+              defaultLanguage="python"
+              theme="vs-dark"
+              value={code}
+              onChange={(v) => {
+                setCode(v);
+                engine.loadCode(v);
+              }}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 15,
+                fontFamily: "JetBrains Mono",
+                padding: { top: 24 },
+                scrollBeyondLastLine: false,
+                smoothScrolling: true,
+              }}
+            />
+          ) : (
+            <DiffView history={engine.history} />
+          )}
         </Box>
 
-        {/* COLUMN C: Output Console */}
-        <Paper square sx={{ width: 350, display: 'flex', flexDirection: 'column', bgcolor: '#0d1117' }}>
-          
-          <Box p={1.5} borderBottom="1px solid #30363d" bgcolor="#161b22">
-            <Typography variant="subtitle2" fontWeight="bold">TERMINAL OUTPUT</Typography>
-          </Box>
+        {/* Terminal */}
+        <OutputPanel error={engine.error} logs={engine.logs} />
 
-          <Box p={2} sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72' }}>
-            {engine.error || "No errors yet."}
-          </Box>
-
-          <Box p={1.5} borderTop="1px solid #30363d" borderBottom="1px solid #30363d" bgcolor="#161b22" mt="auto">
-            <Typography variant="subtitle2" fontWeight="bold" color="secondary.main">AI REASONING</Typography>
-          </Box>
-
-          <Box p={2} sx={{ height: 200, fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', overflowY: 'auto' }}>
-            {engine.logs || "No logs yet."}
-          </Box>
-        </Paper>
-
+        {/* Success Banner */}
+        {showSuccess && (
+          <SuccessBanner
+            onApply={() => setViewMode("diff")}
+            onClose={() => setShowSuccess(false)}
+          />
+        )}
       </Box>
     </Box>
   );
