@@ -1,0 +1,319 @@
+{
+    "info": {
+        "name": "ReCodeX Backend API",
+        "description": "Local AI-Supervised Autonomous Debugging Sandbox",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{base_url}}/health",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "health"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Run Code - Success",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(2 + 3)\",\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/run",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "run"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Run Code - Error (Division by Zero)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(10 / 0)\",\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/run",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "run"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Run Code - Validation Error (Forbidden Import)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"import os\\nos.system('ls')\",\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/run",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "run"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Run Code - Timeout Test",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"import time\\ntime.sleep(10)\",\n  \"timeout\": 2\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/run",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "run"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Generate Patch - ZeroDivisionError",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(10 / 0)\",\n  \"error\": \"ZeroDivisionError: division by zero\",\n  \"stack_trace\": \"Traceback (most recent call last):\\n  File \\\"<string>\\\", line 1, in <module>\\nZeroDivisionError: division by zero\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/patch",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "patch"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Generate Patch - NameError",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(x)\",\n  \"error\": \"NameError: name 'x' is not defined\",\n  \"stack_trace\": \"Traceback (most recent call last):\\n  File \\\"<string>\\\", line 1, in <module>\\nNameError: name 'x' is not defined\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/patch",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "patch"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Generate Patch - IndexError",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"arr = [1, 2, 3]\\nprint(arr[5])\",\n  \"error\": \"IndexError: list index out of range\",\n  \"stack_trace\": \"Traceback (most recent call last):\\n  File \\\"<string>\\\", line 2, in <module>\\nIndexError: list index out of range\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/patch",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "patch"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Repair - NameError",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(x)\",\n  \"max_iterations\": 3,\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/repair",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "repair"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Repair - RecursionError (Factorial)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"def factorial(n):\\n    return n * factorial(n-1)\\nprint(factorial(5))\",\n  \"max_iterations\": 3,\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/repair",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "repair"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Repair - Off-by-One Error",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"def sum_array(arr):\\n    total = 0\\n    for i in range(len(arr) + 1):\\n        total += arr[i]\\n    return total\\nprint(sum_array([1, 2, 3]))\",\n  \"max_iterations\": 3,\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/repair",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "repair"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Repair - TypeError (String Concatenation)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"code\": \"print(\\\"Number: \\\" + 42)\",\n  \"max_iterations\": 3,\n  \"timeout\": 5\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/repair",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "repair"
+                    ]
+                }
+            },
+            "response": []
+        }
+    ]
+}
