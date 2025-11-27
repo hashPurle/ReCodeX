@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { Play, Cpu, Code, GitCompare, Sparkles } from 'lucide-react';
 import Editor from "@monaco-editor/react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"; // <--- NEW IMPORT
 
 import Sidebar from './components/Sidebar';
 import OutputPanel from './components/OutputPanel';
@@ -9,47 +10,34 @@ import AiOverlay from './components/AiOverlay';
 import DiffView from './components/DiffView'; 
 import SuccessBanner from './components/SuccessBanner';
 
-// --- MOCK DATA: Simulates the evolution of code for the Diff Viewer ---
+// --- MOCK DATA ---
 const mockHistory = [
-  // VERSION 1: Broken Code (Original)
   `def bubble_sort(arr):
     n = len(arr)
-    # Traverse through all array elements
     for i in range(n):
         for j in range(0, n-i-1):
             if arr[j] > arr[j+1] :
-                # ERROR: This just overwrites, doesn't swap!
                 arr[j] = arr[j+1]`,
-  
-  // VERSION 2: Intermediate Patch (AI fixed logic but missed variable)
   `def bubble_sort(arr):
     n = len(arr)
-    # Traverse through all array elements
     for i in range(n):
         for j in range(0, n-i-1):
             if arr[j] > arr[j+1] :
-                # AI Attempt 1: Using temp variable
                 temp = arr[j]
-                arr[j] = arr[j+1]
-                # ERROR: Forgot to assign temp back to arr[j+1]`,
-
-  // VERSION 3: Final Correct Fix
+                arr[j] = arr[j+1]`,
   `def bubble_sort(arr):
     n = len(arr)
-    # Traverse through all array elements
     for i in range(n):
         for j in range(0, n-i-1):
             if arr[j] > arr[j+1] :
-                # FIXED: Pythonic tuple swap
                 arr[j], arr[j+1] = arr[j+1], arr[j]`
 ];
 
 function App() {
-  const [viewMode, setViewMode] = useState('editor'); // 'editor' | 'diff'
-  const [isFixing, setIsFixing] = useState(false);    // Laser Animation state
-  const [showSuccess, setShowSuccess] = useState(false); // Success Banner state
+  const [viewMode, setViewMode] = useState('editor');
+  const [isFixing, setIsFixing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   
-  // EDITOR STATE: Default text or loaded file content
   const [code, setCode] = useState(`# ------------------------------------
 # PASTE YOUR BROKEN PYTHON CODE HERE
 # OR OPEN A PROJECT FOLDER ON THE LEFT
@@ -61,18 +49,14 @@ def buggy_function(arr):
         print(arr[i])
 `);
 
-  // Handler: When a file is clicked in Sidebar, update Editor
   const handleFileSelect = (newCode) => {
     setCode(newCode);
-    setViewMode('editor'); // Ensure we see the code
+    setViewMode('editor'); 
   };
 
-  // Handler: Simulate the AI Repair Process
   const handleStartRepair = () => {
     setShowSuccess(false);
     setIsFixing(true);
-    
-    // Fake a 3-second delay for the "AI Scan"
     setTimeout(() => {
       setIsFixing(false);
       setShowSuccess(true);
@@ -94,12 +78,10 @@ def buggy_function(arr):
         backdropFilter: 'blur(10px)',
         position: 'sticky', top: 0, zIndex: 10
       }}>
-        {/* Logo */}
         <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'primary.main', fontWeight: 800, letterSpacing: 1 }}>
           <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} className="text-purple-400"/>
         </Typography>
 
-        {/* Center Toggles */}
         <ToggleButtonGroup
           value={viewMode}
           exclusive
@@ -114,7 +96,6 @@ def buggy_function(arr):
           <ToggleButton value="diff"><GitCompare size={16} style={{ marginRight: 8 }} /> Diff</ToggleButton>
         </ToggleButtonGroup>
 
-        {/* Action Button */}
         <Button 
           variant="contained" 
           startIcon={!isFixing && <Play size={18} />} 
@@ -131,50 +112,65 @@ def buggy_function(arr):
         </Button>
       </Box>
 
-      {/* MAIN CONTENT GRID */}
-      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+      {/* --- MAIN RESIZABLE LAYOUT --- */}
+      <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         
-        {/* 1. LEFT SIDEBAR (File Explorer) */}
-        <Sidebar onFileSelect={handleFileSelect} />
-
-        {/* 2. CENTER STAGE (Editor / Diff) */}
-        <Box sx={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        <PanelGroup direction="horizontal">
           
-          {/* Laser Animation Layer */}
-          {isFixing && <AiOverlay />}
+          {/* 1. LEFT PANEL (SIDEBAR) */}
+          <Panel defaultSize={20} minSize={15} maxSize={30}>
+            <Sidebar onFileSelect={handleFileSelect} />
+          </Panel>
 
-          {/* Conditional View */}
-          {viewMode === 'editor' ? (
-             <Editor
-               height="100%"
-               defaultLanguage="python"
-               theme="vs-dark"
-               value={code}                  // State binding
-               onChange={(val) => setCode(val)} // State update
-               options={{ 
-                 minimap: { enabled: false }, 
-                 fontSize: 15, 
-                 fontFamily: 'JetBrains Mono',
-                 padding: { top: 24, bottom: 24 },
-                 scrollBeyondLastLine: false,
-                 smoothScrolling: true,
-                 cursorBlinking: "smooth"
-               }}
-             />
-          ) : (
-             // Pass the mock history to the Diff Viewer
-             <DiffView history={mockHistory} />
-          )}
-        </Box>
+          {/* HANDLE 1 */}
+          <PanelResizeHandle className="ResizeHandleOuter">
+            <div className="ResizeHandleInner" />
+          </PanelResizeHandle>
 
-        {/* 3. RIGHT PANEL (Terminal) */}
-        <OutputPanel />
+          {/* 2. CENTER PANEL (EDITOR/DIFF) */}
+          <Panel>
+            <Box sx={{ height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              {isFixing && <AiOverlay />}
+              
+              {viewMode === 'editor' ? (
+                <Editor
+                  height="100%"
+                  defaultLanguage="python"
+                  theme="vs-dark"
+                  value={code}
+                  onChange={(val) => setCode(val)}
+                  options={{ 
+                    minimap: { enabled: false }, 
+                    fontSize: 15, 
+                    fontFamily: 'JetBrains Mono',
+                    padding: { top: 24, bottom: 24 },
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    cursorBlinking: "smooth"
+                  }}
+                />
+              ) : (
+                <DiffView history={mockHistory} />
+              )}
+            </Box>
+          </Panel>
 
-        {/* 4. SUCCESS BANNER (Toast) */}
+          {/* HANDLE 2 */}
+          <PanelResizeHandle className="ResizeHandleOuter">
+             <div className="ResizeHandleInner" />
+          </PanelResizeHandle>
+
+          {/* 3. RIGHT PANEL (TERMINAL) */}
+          <Panel defaultSize={25} minSize={20} maxSize={40}>
+            <OutputPanel />
+          </Panel>
+
+        </PanelGroup>
+
+        {/* Success Banner (Floating) */}
         {showSuccess && (
           <SuccessBanner onApply={() => setViewMode('diff')} onClose={() => setShowSuccess(false)} />
         )}
-
       </Box>
     </Box>
   );
