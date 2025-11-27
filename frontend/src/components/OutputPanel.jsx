@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
-import { Paper, Box, Button } from '@mui/material';
-import { Terminal, Cpu } from 'lucide-react';
+import React from 'react';
+import { Paper, Box, Typography } from '@mui/material';
+import { Terminal, Sparkles, MessageSquare } from 'lucide-react'; // Added MessageSquare
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- IMPORT ANIMATIONS ---
 import { tabContentVar } from '../animations/variants';
-
-// --- IMPORT EFFECTS ---
-import HackerText from './effects/HackerText';
 import Typewriter from './effects/Typewriter';
+import ChatInterface from './ChatInterface'; // <--- NEW IMPORT
 
-const OutputPanel = () => {
-  const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'reasoning'
+const OutputPanel = ({ activeTab }) => {
+
+  // Configuration for the Header Label
+  const headerConfig = {
+    terminal: { title: 'TERMINAL OUTPUT', icon: <Terminal size={16} />, color: '#58a6ff' },
+    reasoning: { title: 'AI REASONING LOGS', icon: <Sparkles size={16} />, color: '#a371f7' },
+    chat:      { title: 'AI ASSISTANT CHAT', icon: <MessageSquare size={16} />, color: '#238636' } // New Config
+  }[activeTab];
 
   return (
     <Paper 
@@ -27,70 +30,47 @@ const OutputPanel = () => {
       }}
     >
       
-      {/* --- TAB HEADER --- */}
-      <Box sx={{ borderBottom: '1px solid #30363d', bgcolor: '#161b22', display: 'flex' }}>
-        
-        {/* Terminal Tab Button */}
-        <Button
-          onClick={() => setActiveTab('terminal')}
-          startIcon={<Terminal size={14} />}
-          sx={{
-            borderRadius: 0,
-            textTransform: 'none',
-            color: activeTab === 'terminal' ? '#58a6ff' : '#8b949e',
-            borderBottom: activeTab === 'terminal' ? '2px solid #58a6ff' : '2px solid transparent',
-            bgcolor: activeTab === 'terminal' ? 'rgba(88, 166, 255, 0.1)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(88, 166, 255, 0.05)', color: '#c9d1d9' },
-            px: 2,
-            py: 1.5,
-            fontWeight: 600,
-            fontSize: '0.8rem',
-            minWidth: 120,
-            transition: 'all 0.2s'
+      {/* SECTION HEADER */}
+      <Box 
+        sx={{ 
+          p: 1.5,
+          height: 48, 
+          borderBottom: '1px solid #30363d', 
+          bgcolor: '#161b22', 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1.5
+        }}
+      >
+        <Box sx={{ color: headerConfig.color, display: 'flex' }}>
+          {headerConfig.icon}
+        </Box>
+        <Typography 
+          variant="subtitle2" 
+          sx={{ 
+            fontFamily: 'JetBrains Mono, monospace', 
+            fontWeight: 700, 
+            color: headerConfig.color,
+            letterSpacing: 1,
+            fontSize: '0.75rem'
           }}
         >
-          {/* HACKER TEXT EFFECT: Decrypts "TERMINAL" when loaded */}
-          <HackerText text="TERMINAL" />
-        </Button>
-
-        {/* AI Reasoning Tab Button */}
-        <Button
-          onClick={() => setActiveTab('reasoning')}
-          startIcon={<Cpu size={14} />}
-          sx={{
-            borderRadius: 0,
-            textTransform: 'none',
-            color: activeTab === 'reasoning' ? '#a371f7' : '#8b949e',
-            borderBottom: activeTab === 'reasoning' ? '2px solid #a371f7' : '2px solid transparent',
-            bgcolor: activeTab === 'reasoning' ? 'rgba(163, 113, 247, 0.1)' : 'transparent',
-            '&:hover': { bgcolor: 'rgba(163, 113, 247, 0.05)', color: '#c9d1d9' },
-            px: 2,
-            py: 1.5,
-            fontWeight: 600,
-            fontSize: '0.8rem',
-            minWidth: 140,
-            transition: 'all 0.2s'
-          }}
-        >
-          {/* HACKER TEXT EFFECT: Decrypts "AI REASONING" */}
-          <HackerText text="AI REASONING" />
-        </Button>
+          {headerConfig.title}
+        </Typography>
       </Box>
       
-      {/* --- ANIMATED CONTENT AREA --- */}
-      <Box sx={{ flex: 1, overflowY: 'auto', position: 'relative', overflowX: 'hidden' }}>
+      {/* ANIMATED CONTENT AREA */}
+      <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}> {/* Removed overflowY:auto from here, individual components handle scrolling */}
         <AnimatePresence mode="wait">
           
-          {activeTab === 'terminal' ? (
+          {/* 1. TERMINAL */}
+          {activeTab === 'terminal' && (
             <motion.div
               key="terminal"
               variants={tabContentVar}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              style={{ padding: 16 }}
+              initial="hidden" animate="visible" exit="exit"
+              style={{ padding: 16, height: '100%', overflowY: 'auto' }}
             >
-              {/* TERMINAL CONTENT (Static error logs) */}
               <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72', lineHeight: 1.6 }}>
                 <span style={{ color: '#8b949e' }}>$ python3 script.py</span><br/>
                 &gt; TypeError: cannot unpack non-iterable int object<br/>
@@ -99,16 +79,16 @@ const OutputPanel = () => {
                 &gt; Process exited with code 1
               </Box>
             </motion.div>
-          ) : (
+          )}
+
+          {/* 2. AI REASONING */}
+          {activeTab === 'reasoning' && (
             <motion.div
               key="reasoning"
               variants={tabContentVar}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              style={{ padding: 16 }}
+              initial="hidden" animate="visible" exit="exit"
+              style={{ padding: 16, height: '100%', overflowY: 'auto' }}
             >
-              {/* AI REASONING CONTENT (Animated Typewriter) */}
               <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', lineHeight: 1.6 }}>
                  <Typewriter 
                    speed={15}
@@ -116,6 +96,18 @@ const OutputPanel = () => {
                    text="> [INFO] Analyzing execution stack trace... | > [WARN] Identified variable type mismatch at line 14. | > [THINKING] The user is trying to swap variables but used assignment. | > [ACTION] Generating Patch #1: Implementing tuple swap. | > [SUCCESS] Patch generated. Ready to review."
                  />
               </Box>
+            </motion.div>
+          )}
+
+          {/* 3. CHAT INTERFACE (NEW) */}
+          {activeTab === 'chat' && (
+            <motion.div
+              key="chat"
+              variants={tabContentVar}
+              initial="hidden" animate="visible" exit="exit"
+              style={{ height: '100%' }}
+            >
+              <ChatInterface />
             </motion.div>
           )}
 

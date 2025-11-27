@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, ToggleButton, ToggleButtonGroup, IconButton } from '@mui/material';
-import { Play, Cpu, Code, GitCompare, Sparkles, ArrowLeft } from 'lucide-react'; // Added ArrowLeft
+import { Box, Typography, Button, ToggleButton, ToggleButtonGroup, IconButton, Divider } from '@mui/material';
+import { Play, Cpu, Code, GitCompare, Sparkles, ArrowLeft, Terminal, MessageSquare } from 'lucide-react'; // Added MessageSquare
 import Editor from "@monaco-editor/react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"; 
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom'; // Import Hook for navigation
+import { useNavigate } from 'react-router-dom';
 
-// --- CORRECTED PATHS (../components) ---
 import Sidebar from '../components/Sidebar';
 import OutputPanel from '../components/OutputPanel';
 import AiOverlay from '../components/AiOverlay';
@@ -37,9 +36,14 @@ const mockHistory = [
 ];
 
 function Ide() {
-  const navigate = useNavigate(); // Hook to go back to Dashboard
+  const navigate = useNavigate();
   
+  // STATE 1: Center Panel (Code vs Diff)
   const [viewMode, setViewMode] = useState('editor');
+  
+  // STATE 2: Right Panel (Terminal vs AI vs Chat)
+  const [activeOutputTab, setActiveOutputTab] = useState('terminal');
+
   const [isFixing, setIsFixing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
@@ -62,9 +66,13 @@ def buggy_function(arr):
   const handleStartRepair = () => {
     setShowSuccess(false);
     setIsFixing(true);
+    
+    // Fake a 3-second delay
     setTimeout(() => {
       setIsFixing(false);
       setShowSuccess(true);
+      // Automatically switch to AI Logic tab when repair finishes
+      setActiveOutputTab('reasoning'); 
     }, 3000);
   };
 
@@ -89,35 +97,65 @@ def buggy_function(arr):
           position: 'sticky', top: 0, zIndex: 10
         }}>
           
-          {/* LEFT: Back Button + Logo */}
+          {/* LEFT: Logo & Back */}
           <Box display="flex" alignItems="center" gap={2}>
             <IconButton 
-              onClick={() => navigate('/')} // Go back to Dashboard
+              onClick={() => navigate('/')} 
               size="small"
               sx={{ color: '#8b949e', border: '1px solid #30363d', borderRadius: 2, '&:hover': { color: 'white', borderColor: 'white' } }}
             >
               <ArrowLeft size={18} />
             </IconButton>
-
             <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'primary.main', fontWeight: 800, letterSpacing: 1 }}>
-              <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} className="text-purple-400"/>
+              <Cpu size={24} /> AutoBugFix_
             </Typography>
           </Box>
 
-          {/* CENTER: Toggles */}
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(e, newMode) => newMode && setViewMode(newMode)}
-            size="small"
-            sx={{ 
-              '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 3 }, 
-              '& .Mui-selected': { bgcolor: '#1f6feb !important', color: 'white !important', borderColor: '#1f6feb !important' } 
-            }}
-          >
-            <ToggleButton value="editor"><Code size={16} style={{ marginRight: 8 }} /> Code</ToggleButton>
-            <ToggleButton value="diff"><GitCompare size={16} style={{ marginRight: 8 }} /> Diff</ToggleButton>
-          </ToggleButtonGroup>
+          {/* CENTER: Combined Toggles */}
+          <Box display="flex" alignItems="center" gap={2}>
+            
+            {/* Group 1: Editor View */}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(e, newMode) => newMode && setViewMode(newMode)}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 2, py: 0.5 }, 
+                '& .Mui-selected': { bgcolor: '#1f6feb !important', color: 'white !important', borderColor: '#1f6feb !important' } 
+              }}
+            >
+              <ToggleButton value="editor"><Code size={16} style={{ marginRight: 8 }} /> Code</ToggleButton>
+              <ToggleButton value="diff"><GitCompare size={16} style={{ marginRight: 8 }} /> Diff</ToggleButton>
+            </ToggleButtonGroup>
+
+            {/* Vertical Divider */}
+            <Divider orientation="vertical" flexItem sx={{ bgcolor: '#30363d', mx: 1 }} />
+
+            {/* Group 2: Output View (Terminal / AI / Chat) */}
+            <ToggleButtonGroup
+              value={activeOutputTab}
+              exclusive
+              onChange={(e, newMode) => newMode && setActiveOutputTab(newMode)}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 2, py: 0.5 }, 
+                '& .Mui-selected': { 
+                   // Dynamic color based on selection
+                   bgcolor: activeOutputTab === 'reasoning' ? '#a371f7 !important' : 
+                            activeOutputTab === 'chat' ? '#238636 !important' : '#30363d !important',
+                   color: 'white !important', 
+                   // Transparent border for selected item to look cleaner
+                   borderColor: 'transparent'
+                } 
+              }}
+            >
+              <ToggleButton value="terminal"><Terminal size={16} style={{ marginRight: 8 }} /> Terminal</ToggleButton>
+              <ToggleButton value="reasoning"><Sparkles size={16} style={{ marginRight: 8 }} /> AI Logic</ToggleButton>
+              <ToggleButton value="chat"><MessageSquare size={16} style={{ marginRight: 8 }} /> Chat</ToggleButton>
+            </ToggleButtonGroup>
+
+          </Box>
 
           {/* RIGHT: Action Button */}
           <Button 
@@ -153,15 +191,12 @@ def buggy_function(arr):
               <Sidebar onFileSelect={handleFileSelect} />
             </Panel>
 
-            <PanelResizeHandle className="ResizeHandleOuter">
-              <div className="ResizeHandleInner" />
-            </PanelResizeHandle>
+            <PanelResizeHandle className="ResizeHandleOuter"><div className="ResizeHandleInner" /></PanelResizeHandle>
 
-            {/* 2. EDITOR */}
+            {/* 2. CENTER PANEL */}
             <Panel>
               <Box sx={{ height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                 {isFixing && <AiOverlay />}
-                
                 {viewMode === 'editor' ? (
                   <Editor
                     height="100%"
@@ -169,15 +204,7 @@ def buggy_function(arr):
                     theme="vs-dark"
                     value={code}
                     onChange={(val) => setCode(val)}
-                    options={{ 
-                      minimap: { enabled: false }, 
-                      fontSize: 15, 
-                      fontFamily: 'JetBrains Mono',
-                      padding: { top: 24, bottom: 24 },
-                      scrollBeyondLastLine: false,
-                      smoothScrolling: true,
-                      cursorBlinking: "smooth"
-                    }}
+                    options={{ minimap: { enabled: false }, fontSize: 15, fontFamily: 'JetBrains Mono', padding: { top: 24, bottom: 24 }, scrollBeyondLastLine: false, smoothScrolling: true, cursorBlinking: "smooth" }}
                   />
                 ) : (
                   <DiffView history={mockHistory} />
@@ -185,18 +212,16 @@ def buggy_function(arr):
               </Box>
             </Panel>
 
-            <PanelResizeHandle className="ResizeHandleOuter">
-               <div className="ResizeHandleInner" />
-            </PanelResizeHandle>
+            <PanelResizeHandle className="ResizeHandleOuter"><div className="ResizeHandleInner" /></PanelResizeHandle>
 
-            {/* 3. TERMINAL */}
+            {/* 3. RIGHT PANEL (Controlled by Navbar) */}
             <Panel defaultSize={25} minSize={20} maxSize={40}>
-              <OutputPanel />
+              {/* PASSING STATE DOWN */}
+              <OutputPanel activeTab={activeOutputTab} />
             </Panel>
 
           </PanelGroup>
 
-          {/* Success Banner */}
           {showSuccess && (
             <SuccessBanner onApply={() => setViewMode('diff')} onClose={() => setShowSuccess(false)} />
           )}
