@@ -1,67 +1,94 @@
-// frontend/src/utils/api.js
+// src/utils/api.js
+const BASE_URL = "http://127.0.0.1:8000";
 
-import axios from "axios";
-import mockData from "./mockTestData";
-
-/*
-  REAL BACKEND ROUTES (when available):
-    POST http://localhost:8000/run
-    POST http://localhost:8000/patch
-    POST http://localhost:8000/repair
-
-  If backend is offline, all functions fallback to mockTestData.
-*/
-
-// Configure axios
-const api = axios.create({
-  baseURL: "http://localhost:8000", // backend URL
-  timeout: 5000,
-});
-
-// Helper wrapper (tries backend → fallback to mock)
-async function tryRequest(endpoint, body, mockReturn) {
+/* ------------------------------
+   Helper: unified POST + JSON
+--------------------------------*/
+async function postJson(path, body) {
   try {
-    const res = await api.post(endpoint, body);
-    if (res?.data) {
-      return res.data; // valid successful backend response
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+
+    // Read text first so both JSON and raw text are supported
+    const text = await res.text();
+
+    let parsed;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      parsed = text; // fallback raw text
+      
     }
-    return mockReturn;
+
+    // Ensure errors are ALWAYS strings, never objects (prevents React crash)
+    if (parsed && typeof parsed === "object" && parsed.detail) {
+      return {
+        status: res.status,
+        data: null,
+        error: typeof parsed.detail === "string"
+          ? parsed.detail
+          : JSON.stringify(parsed.detail)
+      };
+    }
+
+    return { status: res.status, data: parsed };
   } catch (err) {
-    console.warn(`⚠ Backend offline (${endpoint}), using mock fallback.`);
-    return mockReturn; // fallback
+    return { status: 0, data: null, error: String(err.message || err) };
   }
 }
 
-/* -----------------------------------------------------------
-   1. RUN CODE
-   Returns:
-     { output: "...", error: "...", logs: [...] }
------------------------------------------------------------- */
-export async function runCode({ code }) {
-  return await tryRequest("/run", { code }, mockData.mockRunResponse);
+/* ------------------------------
+   /run
+--------------------------------*/
+export async function runCode(code) {
+  if (!code || !code.trim()) {
+    return { error: "Code is empty. Nothing to run." };
+  }
+
+  const resp = await postJson("/run", { code });
+
+  if (resp.status === 200) return resp.data;
+
+  return {
+    error: resp.error || `Run failed (status ${resp.status})`,
+    raw: resp.data
+  };
 }
 
-/* -----------------------------------------------------------
-   2. GENERATE PATCH (optional for patch-level diff)
------------------------------------------------------------- */
-export async function generatePatch({ logs, code }) {
-  return await tryRequest("/patch", { logs, code }, mockData.mockPatchResponse);
+/* ------------------------------
+   /patch
+--------------------------------*/
+export async function generatePatch(logs, code) {
+  const resp = await postJson("/patch", { logs, code });
+
+  if (resp.status === 200) return resp.data;
+
+  return {
+    error: resp.error || `Patch failed (status ${resp.status})`,
+    raw: resp.data
+  };
 }
 
-/* -----------------------------------------------------------
-   3. START FULL REPAIR
-   Returns structure:
-     {
-       history: [...codeVersions],
-       finalCode: "...",
-       logs: [...],
-       error: null
-     }
------------------------------------------------------------- */
-export async function repairCode({ code, iterations = 3 }) {
-  return await tryRequest(
-    "/repair",
-    { code, iterations },
-    mockData.mockRepairResponse
-  );
+/* ------------------------------
+   /repair
+--------------------------------*/
+export async function startRepair(code, iterations = 3) {
+  if (!code || !code.trim()) {
+    return { error: "Code is empty. Cannot repair." };
+  }
+
+  const resp = await postJson("/repair", {
+    code,
+    max_iterations: iterations
+  });
+
+  if (resp.status === 200) return resp.data;
+
+  return {
+    error: resp.error || `Repair failed (status ${resp.status})`,
+    raw: resp.data
+  };
 }
