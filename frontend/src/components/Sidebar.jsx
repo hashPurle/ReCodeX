@@ -1,14 +1,18 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { Paper, Box, Typography, Stack, Chip, Button, IconButton } from '@mui/material';
+import React, { useRef, useState } from 'react';
+import { Paper, Box, Typography, Stack, Chip, Button } from '@mui/material';
 import { FileCode, Folder, FolderOpen, ChevronRight, ChevronDown, XCircle, FileJson, FileType, File } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// --- IMPORT ANIMATIONS ---
+// Make sure src/animations/variants.js exists!
+import { containerVar, itemVar } from '../animations/variants';
 
 // --- HELPER: Build Tree from File List ---
 const buildFileTree = (files) => {
   const root = [];
   
   files.forEach(file => {
-    // Filter out node_modules and hidden files to keep it clean
+    // Filter out node_modules and hidden files
     if (file.webkitRelativePath.includes('node_modules') || file.name.startsWith('.')) return;
 
     const parts = file.webkitRelativePath.split('/');
@@ -37,11 +41,10 @@ const buildFileTree = (files) => {
   return root;
 };
 
-// --- COMPONENT: Recursive File Node ---
+// --- COMPONENT: Recursive File Node (Animated) ---
 const FileTreeNode = ({ node, depth, onFileClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   
-  // Choose Icon based on file type
   const getIcon = (name, type, isOpen) => {
     if (type === 'folder') return isOpen ? <FolderOpen size={14} color="#58a6ff" /> : <Folder size={14} color="#58a6ff" />;
     if (name.endsWith('.js') || name.endsWith('.jsx')) return <FileCode size={14} color="#f1e05a" />;
@@ -61,45 +64,46 @@ const FileTreeNode = ({ node, depth, onFileClick }) => {
 
   return (
     <Box sx={{ userSelect: 'none' }}>
-      {/* The Row Itself */}
-      <Box 
+      {/* ANIMATED ROW ITEM */}
+      <motion.div
+        variants={itemVar} // Apply Fade In Variant
+        // No initial/animate here; the Parent Container controls the stagger!
+        whileHover={{ x: 4, color: "#58a6ff" }} // Hover Effect: Slide right + Blue
         onClick={handleClick}
-        sx={{ 
+        style={{ 
           display: 'flex', 
           alignItems: 'center', 
-          gap: 0.5, 
-          py: 0.5, 
-          pl: `${depth * 12 + 8}px`, // Dynamic Indentation
-          pr: 1,
+          gap: 6, 
+          paddingTop: 4, 
+          paddingBottom: 4, 
+          paddingLeft: `${depth * 12 + 8}px`, 
+          paddingRight: 8,
           cursor: 'pointer',
           color: '#c9d1d9',
           fontSize: '0.85rem',
           fontFamily: 'monospace',
-          '&:hover': { bgcolor: 'rgba(47, 129, 247, 0.1)', color: 'primary.main' },
-          transition: 'background 0.1s'
+          transition: 'background 0.1s' 
         }}
       >
-        {/* Chevron for Folders */}
         <Box sx={{ width: 16, display: 'flex', justifyContent: 'center' }}>
           {node.type === 'folder' && (
              isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />
           )}
         </Box>
-        
-        {/* Icon & Name */}
         {getIcon(node.name, node.type, isOpen)}
         <Typography variant="body2" sx={{ fontFamily: 'inherit', fontSize: 'inherit', pt: 0.2 }} noWrap>
           {node.name}
         </Typography>
-      </Box>
+      </motion.div>
 
-      {/* Recursive Children (Only if Folder is Open) */}
+      {/* RECURSIVE CHILDREN (Animated Open/Close) */}
       <AnimatePresence>
         {node.type === 'folder' && isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             style={{ overflow: 'hidden' }}
           >
             {node.children.map((child, i) => (
@@ -119,9 +123,9 @@ const Sidebar = ({ onFileSelect }) => {
 
   const handleFolderUpload = (event) => {
     const uploadedFiles = Array.from(event.target.files);
-    // 1. Build the Tree Structure
     const tree = buildFileTree(uploadedFiles);
-    // 2. Sort: Folders top, then Files
+    
+    // Sort: Folders first
     const sortNodes = (nodes) => {
       return nodes.sort((a, b) => {
         if (a.type === b.type) return a.name.localeCompare(b.name);
@@ -141,7 +145,17 @@ const Sidebar = ({ onFileSelect }) => {
   };
 
   return (
-    <Paper square sx={{ width: 250, borderRight: '1px solid #30363d', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', height: '100%' }}>
+    <Paper 
+      square 
+      sx={{ 
+        width: '100%', 
+        height: '100%', 
+        borderRight: '1px solid #30363d', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        bgcolor: 'background.paper' 
+      }}
+    >
       
       {/* HEADER */}
       <Box p={2} borderBottom="1px solid #30363d">
@@ -175,7 +189,7 @@ const Sidebar = ({ onFileSelect }) => {
         </Button>
       </Box>
 
-      {/* TREE VIEW */}
+      {/* TREE VIEW CONTAINER */}
       <Box flex={1} overflow="auto" sx={{ '&::-webkit-scrollbar': { width: '4px' } }}>
         <Box pt={1}>
           {fileTree.length === 0 ? (
@@ -183,14 +197,21 @@ const Sidebar = ({ onFileSelect }) => {
               No project loaded.
             </Typography>
           ) : (
-            fileTree.map((node, i) => (
-              <FileTreeNode key={i} node={node} depth={0} onFileClick={handleFileClick} />
-            ))
+            // WRAPPER WITH CONTAINER VARIANT (Triggers the Stagger Effect)
+            <motion.div
+              variants={containerVar}
+              initial="hidden"
+              animate="visible"
+            >
+              {fileTree.map((node, i) => (
+                <FileTreeNode key={i} node={node} depth={0} onFileClick={handleFileClick} />
+              ))}
+            </motion.div>
           )}
         </Box>
       </Box>
 
-      {/* TIMELINE (Fixed at bottom) */}
+      {/* TIMELINE */}
       <Box p={2} borderTop="1px solid #30363d">
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontSize: '0.75rem', fontWeight: 700, letterSpacing: 1 }}>REPAIR TIMELINE</Typography>
         <Stack spacing={1}>

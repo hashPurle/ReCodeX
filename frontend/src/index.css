@@ -40,3 +40,34 @@ body {
 .monaco-editor .scrollbar .slider:hover {
   background: #58a6ff !important;
 }
+
+/* RESIZABLE PANEL HANDLES */
+.ResizeHandleOuter {
+  flex: 0 0 1.5em;
+  position: relative;
+  outline: none;
+  background-color: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: col-resize;
+  width: 4px; /* The clickable area width */
+  z-index: 50; /* Ensure it's on top */
+}
+
+.ResizeHandleInner {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 1px;
+  width: 1px; /* The visible line width */
+  background-color: #30363d; /* Dark gray line */
+  transition: background-color 0.2s linear;
+}
+
+/* When hovering or dragging, make it blue */
+.ResizeHandleOuter:hover .ResizeHandleInner,
+.ResizeHandleOuter[data-resize-handle-active] .ResizeHandleInner {
+  background-color: #2f81f7; /* Blue glow */
+  width: 2px;
+}

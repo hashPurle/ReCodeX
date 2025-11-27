@@ -1,202 +1,202 @@
-// src/App.jsx
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@mui/material";
-
-import { Play, Cpu, Code, GitCompare, Sparkles } from "lucide-react";
+import React, { useState } from 'react';
+import { Box, Typography, Button, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Play, Cpu, Code, GitCompare, Sparkles } from 'lucide-react';
 import Editor from "@monaco-editor/react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"; 
+import { motion } from 'framer-motion';
 
-// Core Components
-import Sidebar from "./components/Sidebar";
-import OutputPanel from "./components/OutputPanel";
-import AiOverlay from "./components/AiOverlay";
-import DiffView from "./components/DiffView";
-import SuccessBanner from "./components/SuccessBanner";
+import Sidebar from './components/Sidebar';
+import OutputPanel from './components/OutputPanel';
+import AiOverlay from './components/AiOverlay';
+import DiffView from './components/DiffView'; 
+import SuccessBanner from './components/SuccessBanner';
 
-// Engine Logic (Your part)
-import { useRepairEngine } from "./hooks/useRepairEngine";
+// --- MOCK DATA: Simulates the evolution of code for the Diff Viewer ---
+const mockHistory = [
+  // Version 1
+  `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                arr[j] = arr[j+1] # Error: Overwrites instead of swapping`,
+  // Version 2
+  `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                temp = arr[j]
+                arr[j] = arr[j+1] # Error: Missed assignment`,
+  // Version 3 (Fixed)
+  `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1] :
+                arr[j], arr[j+1] = arr[j+1], arr[j]`
+];
 
 function App() {
-  const engine = useRepairEngine();
+  const [viewMode, setViewMode] = useState('editor'); // 'editor' | 'diff'
+  const [isFixing, setIsFixing] = useState(false);    // Laser Animation state
+  const [showSuccess, setShowSuccess] = useState(false); // Success Banner state
+  
+  // EDITOR STATE
+  const [code, setCode] = useState(`# ------------------------------------
+# PASTE YOUR BROKEN PYTHON CODE HERE
+# OR OPEN A PROJECT FOLDER ON THE LEFT
+# ------------------------------------
 
-  const [viewMode, setViewMode] = useState("editor"); // "editor" | "diff"
-  const [isFixing, setIsFixing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+def buggy_function(arr):
+    # Example: This will cause an IndexError
+    for i in range(len(arr) + 1):
+        print(arr[i])
+`);
 
-  const [code, setCode] = useState("# Paste your Python code here");
-
-  // ---------------------------------------------
-  // When clicking file in sidebar
-  // ---------------------------------------------
+  // Handler: When a file is clicked in Sidebar
   const handleFileSelect = (newCode) => {
     setCode(newCode);
-    engine.loadCode(newCode);
-    setViewMode("editor");
+    setViewMode('editor'); 
   };
 
-  // ---------------------------------------------
-  // Auto Repair → calls engine + shows animation
-  // ---------------------------------------------
-  const handleStartRepair = async () => {
+  // Handler: Simulate the AI Repair Process
+  const handleStartRepair = () => {
     setShowSuccess(false);
     setIsFixing(true);
-
-    // Run engine repair (mock or backend)
-    await engine.startFullRepair();
-
-    // Animation delay
+    
+    // Fake a 3-second delay
     setTimeout(() => {
       setIsFixing(false);
-      setShowSuccess(true); // Show “Fix Applied” banner
-    }, 1200);
+      setShowSuccess(true);
+    }, 3000);
   };
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* --------------------------- NAVBAR --------------------------- */}
-      <Box
-        sx={{
-          height: 64,
-          borderBottom: "1px solid rgba(48, 54, 61, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          px: 3,
-          justifyContent: "space-between",
-          bgcolor: "rgba(22, 27, 34, 0.8)",
-          backdropFilter: "blur(10px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
+    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#0d1117' }}>
+      
+      {/* --- NAVBAR (Animated Slide Down) --- */}
+      <motion.div 
+        initial={{ y: -50, opacity: 0 }} 
+        animate={{ y: 0, opacity: 1 }} 
+        transition={{ duration: 0.5, ease: "circOut" }}
       >
-        {/* Logo */}
-        <Typography
-          variant="h6"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1.5,
-            color: "primary.main",
-            fontWeight: 800,
-            letterSpacing: 1,
-          }}
-        >
-          <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} />
-        </Typography>
+        <Box sx={{ 
+          height: 64, 
+          borderBottom: '1px solid rgba(48, 54, 61, 0.5)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          px: 3, 
+          justifyContent: 'space-between',
+          bgcolor: 'rgba(22, 27, 34, 0.8)', 
+          backdropFilter: 'blur(10px)',
+          position: 'sticky', top: 0, zIndex: 10
+        }}>
+          {/* Logo */}
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: 'primary.main', fontWeight: 800, letterSpacing: 1 }}>
+            <Cpu size={24} /> AutoBugFix_ <Sparkles size={16} className="text-purple-400"/>
+          </Typography>
 
-        {/* Center Toggle Buttons */}
-        <ToggleButtonGroup
-          value={viewMode}
-          exclusive
-          onChange={(e, v) => v && setViewMode(v)}
-          size="small"
-          sx={{
-            "& .MuiToggleButton-root": {
-              color: "#8b949e",
-              borderColor: "#30363d",
-              px: 3,
-            },
-            "& .Mui-selected": {
-              bgcolor: "#1f6feb !important",
-              color: "white !important",
-              borderColor: "#1f6feb !important",
-            },
-          }}
-        >
-          <ToggleButton value="editor">
-            <Code size={16} style={{ marginRight: 8 }} /> Code
-          </ToggleButton>
+          {/* Center Toggles */}
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(e, newMode) => newMode && setViewMode(newMode)}
+            size="small"
+            sx={{ 
+              '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 3 }, 
+              '& .Mui-selected': { bgcolor: '#1f6feb !important', color: 'white !important', borderColor: '#1f6feb !important' } 
+            }}
+          >
+            <ToggleButton value="editor"><Code size={16} style={{ marginRight: 8 }} /> Code</ToggleButton>
+            <ToggleButton value="diff"><GitCompare size={16} style={{ marginRight: 8 }} /> Diff</ToggleButton>
+          </ToggleButtonGroup>
 
-          <ToggleButton value="diff" disabled={!engine.history.length}>
-            <GitCompare size={16} style={{ marginRight: 8 }} /> Diff
-          </ToggleButton>
-        </ToggleButtonGroup>
+          {/* Action Button */}
+          <Button 
+            variant="contained" 
+            startIcon={!isFixing && <Play size={18} />} 
+            disabled={isFixing}
+            onClick={handleStartRepair}
+            sx={{ 
+              fontWeight: 'bold', borderRadius: 2, px: 3, py: 1, textTransform: 'none', fontSize: '0.9rem',
+              boxShadow: '0 0 15px rgba(47, 129, 247, 0.4)',
+              transition: 'all 0.3s ease',
+              '&:hover': { boxShadow: '0 0 25px rgba(47, 129, 247, 0.6)' }
+            }}
+          >
+            {isFixing ? 'AI Repairing...' : 'Start Auto-Repair'}
+          </Button>
+        </Box>
+      </motion.div>
 
-        {/* Start Auto-Repair Button */}
-        <Button
-          variant="contained"
-          startIcon={!isFixing && <Play size={18} />}
-          disabled={isFixing}
-          onClick={handleStartRepair}
-          sx={{
-            fontWeight: "bold",
-            borderRadius: 2,
-            px: 3,
-            py: 1,
-            textTransform: "none",
-            fontSize: "0.9rem",
-            boxShadow: "0 0 15px rgba(47, 129, 247, 0.4)",
-            transition: "all 0.3s ease",
-            "&:hover": { boxShadow: "0 0 25px rgba(47, 129, 247, 0.6)" },
-          }}
-        >
-          {isFixing ? "AI Repairing..." : "Start Auto-Repair"}
-        </Button>
-      </Box>
-
-      {/* -------------------------- MAIN GRID -------------------------- */}
-      <Box
-        sx={{
-          flex: 1,
-          display: "flex",
-          overflow: "hidden",
-          position: "relative",
-        }}
+      {/* --- MAIN RESIZABLE LAYOUT (Animated Fade In) --- */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        transition={{ duration: 0.6, delay: 0.2 }}
+        style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex' }}
       >
-        {/* Sidebar */}
-        <Sidebar onFileSelect={handleFileSelect} />
+        <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+          
+          <PanelGroup direction="horizontal">
+            
+            {/* 1. LEFT PANEL (SIDEBAR) */}
+            <Panel defaultSize={20} minSize={15} maxSize={30}>
+              <Sidebar onFileSelect={handleFileSelect} />
+            </Panel>
 
-        {/* Editor / Diff */}
-        <Box
-          sx={{
-            flex: 1,
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {isFixing && <AiOverlay />}
+            {/* HANDLE 1 */}
+            <PanelResizeHandle className="ResizeHandleOuter">
+              <div className="ResizeHandleInner" />
+            </PanelResizeHandle>
 
-          {viewMode === "editor" ? (
-            <Editor
-              height="100%"
-              defaultLanguage="python"
-              theme="vs-dark"
-              value={code}
-              onChange={(v) => {
-                setCode(v);
-                engine.loadCode(v);
-              }}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 15,
-                fontFamily: "JetBrains Mono",
-                padding: { top: 24 },
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-              }}
-            />
-          ) : (
-            <DiffView history={engine.history} />
+            {/* 2. CENTER PANEL (EDITOR/DIFF) */}
+            <Panel>
+              <Box sx={{ height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                {isFixing && <AiOverlay />}
+                
+                {viewMode === 'editor' ? (
+                  <Editor
+                    height="100%"
+                    defaultLanguage="python"
+                    theme="vs-dark"
+                    value={code}
+                    onChange={(val) => setCode(val)}
+                    options={{ 
+                      minimap: { enabled: false }, 
+                      fontSize: 15, 
+                      fontFamily: 'JetBrains Mono',
+                      padding: { top: 24, bottom: 24 },
+                      scrollBeyondLastLine: false,
+                      smoothScrolling: true,
+                      cursorBlinking: "smooth"
+                    }}
+                  />
+                ) : (
+                  <DiffView history={mockHistory} />
+                )}
+              </Box>
+            </Panel>
+
+            {/* HANDLE 2 */}
+            <PanelResizeHandle className="ResizeHandleOuter">
+               <div className="ResizeHandleInner" />
+            </PanelResizeHandle>
+
+            {/* 3. RIGHT PANEL (TERMINAL) */}
+            <Panel defaultSize={25} minSize={20} maxSize={40}>
+              <OutputPanel />
+            </Panel>
+
+          </PanelGroup>
+
+          {/* Success Banner (Floating) */}
+          {showSuccess && (
+            <SuccessBanner onApply={() => setViewMode('diff')} onClose={() => setShowSuccess(false)} />
           )}
         </Box>
-
-        {/* Terminal */}
-        <OutputPanel error={engine.error} logs={engine.logs} />
-
-        {/* Success Banner */}
-        {showSuccess && (
-          <SuccessBanner
-            onApply={() => setViewMode("diff")}
-            onClose={() => setShowSuccess(false)}
-          />
-        )}
-      </Box>
+      </motion.div>
     </Box>
   );
 }

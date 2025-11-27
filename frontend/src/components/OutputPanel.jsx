@@ -1,101 +1,119 @@
-// src/components/OutputPanel.jsx
+import React, { useState } from 'react';
+import { Paper, Box, Button } from '@mui/material';
+import { Terminal, Cpu } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import React from "react";
-import { Paper, Box, Typography, Divider } from "@mui/material";
-import { Terminal, Cpu } from "lucide-react";
-import { formatError, extractLineNumber } from "../utils/formatError";
+// --- IMPORT ANIMATIONS ---
+import { tabContentVar } from '../animations/variants';
 
-/*
-  OutputPanel Component (Final Merged Version)
-  -------------------------------------------
-  Keeps:
-  ✔ Your real logic (error formatter + line extraction)
-  ✔ Vishal's UI styling (terminal layout, icons, colors)
-*/
-
-const OutputPanel = ({ error, logs }) => {
-  const cleanError = error ? formatError(error) : "No errors yet.";
-  const lineNumber = extractLineNumber(error);
+const OutputPanel = () => {
+  const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'reasoning'
 
   return (
-    <Paper
-      square
-      sx={{
-        width: 350,
-        display: "flex",
-        flexDirection: "column",
-        bgcolor: "#0d1117",
-        borderLeft: "1px solid #30363d",
+    <Paper 
+      square 
+      elevation={0}
+      sx={{ 
+        width: '100%', 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        bgcolor: '#0d1117', 
+        borderLeft: '1px solid #30363d' 
       }}
     >
-      {/* -------- TERMINAL HEADER -------- */}
-      <Box
-        p={1.5}
-        borderBottom="1px solid #30363d"
-        bgcolor="#161b22"
-        display="flex"
-        alignItems="center"
-        gap={1}
-      >
-        <Terminal size={14} color="#8b949e" />
-        <Typography variant="subtitle2" fontWeight="bold" color="text.secondary">
-          TERMINAL OUTPUT
-        </Typography>
-      </Box>
+      
+      {/* --- TAB HEADER --- */}
+      <Box sx={{ borderBottom: '1px solid #30363d', bgcolor: '#161b22', display: 'flex' }}>
+        
+        {/* Terminal Tab Button */}
+        <Button
+          onClick={() => setActiveTab('terminal')}
+          startIcon={<Terminal size={14} />}
+          sx={{
+            borderRadius: 0,
+            textTransform: 'none',
+            color: activeTab === 'terminal' ? '#58a6ff' : '#8b949e',
+            borderBottom: activeTab === 'terminal' ? '2px solid #58a6ff' : '2px solid transparent',
+            bgcolor: activeTab === 'terminal' ? 'rgba(88, 166, 255, 0.1)' : 'transparent',
+            '&:hover': { bgcolor: 'rgba(88, 166, 255, 0.05)', color: '#c9d1d9' },
+            px: 2,
+            py: 1.5,
+            fontWeight: 600,
+            fontSize: '0.8rem',
+            minWidth: 120,
+            transition: 'all 0.2s'
+          }}
+        >
+          TERMINAL
+        </Button>
 
-      {/* -------- ERROR SECTION -------- */}
-      <Box
-        p={2}
-        sx={{
-          fontFamily: "monospace",
-          fontSize: "0.85rem",
-          color: "#ff7b72",
-          overflowY: "auto",
-          flex: 1,
-        }}
-      >
-        <Typography sx={{ whiteSpace: "pre-wrap" }}>{cleanError}</Typography>
-
-        {lineNumber && (
-          <Typography sx={{ mt: 1, color: "#ffa657" }}>
-            → Suspected Line: {lineNumber}
-          </Typography>
-        )}
-      </Box>
-
-      {/* Divider */}
-      <Divider sx={{ borderColor: "#30363d" }} />
-
-      {/* -------- AI REASONING HEADER -------- */}
-      <Box
-        p={1.5}
-        borderTop="1px solid #30363d"
-        borderBottom="1px solid #30363d"
-        bgcolor="#161b22"
-        display="flex"
-        alignItems="center"
-        gap={1}
-      >
-        <Cpu size={14} color="#a371f7" />
-        <Typography variant="subtitle2" fontWeight="bold" color="secondary.main">
+        {/* AI Reasoning Tab Button */}
+        <Button
+          onClick={() => setActiveTab('reasoning')}
+          startIcon={<Cpu size={14} />}
+          sx={{
+            borderRadius: 0,
+            textTransform: 'none',
+            color: activeTab === 'reasoning' ? '#a371f7' : '#8b949e',
+            borderBottom: activeTab === 'reasoning' ? '2px solid #a371f7' : '2px solid transparent',
+            bgcolor: activeTab === 'reasoning' ? 'rgba(163, 113, 247, 0.1)' : 'transparent',
+            '&:hover': { bgcolor: 'rgba(163, 113, 247, 0.05)', color: '#c9d1d9' },
+            px: 2,
+            py: 1.5,
+            fontWeight: 600,
+            fontSize: '0.8rem',
+            minWidth: 140,
+            transition: 'all 0.2s'
+          }}
+        >
           AI REASONING
-        </Typography>
+        </Button>
       </Box>
+      
+      {/* --- ANIMATED CONTENT AREA --- */}
+      <Box sx={{ flex: 1, overflowY: 'auto', position: 'relative', overflowX: 'hidden' }}>
+        <AnimatePresence mode="wait">
+          
+          {activeTab === 'terminal' ? (
+            <motion.div
+              key="terminal"
+              variants={tabContentVar}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              style={{ padding: 16 }}
+            >
+              {/* TERMINAL CONTENT */}
+              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72', lineHeight: 1.6 }}>
+                <span style={{ color: '#8b949e' }}>$ python3 script.py</span><br/>
+                &gt; TypeError: cannot unpack non-iterable int object<br/>
+                &gt; at line 14, in bubble_sort<br/>
+                &gt; <br/>
+                &gt; Process exited with code 1
+              </Box>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="reasoning"
+              variants={tabContentVar}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              style={{ padding: 16 }}
+            >
+              {/* AI REASONING CONTENT */}
+              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', lineHeight: 1.6 }}>
+                 &gt; [INFO] Analyzing execution stack trace...<br/>
+                 &gt; [WARN] Identified variable type mismatch at line 14.<br/>
+                 &gt; [THINKING] The user is trying to swap variables but used assignment.<br/>
+                 &gt; [ACTION] Generating Patch #1: Implementing tuple swap.<br/>
+                 &gt; [SUCCESS] Patch generated. Ready to review.
+              </Box>
+            </motion.div>
+          )}
 
-      {/* -------- LOGS SECTION -------- */}
-      <Box
-        p={2}
-        sx={{
-          height: 200,
-          fontFamily: "monospace",
-          fontSize: "0.85rem",
-          color: "#a371f7",
-          overflowY: "auto",
-        }}
-      >
-        <Typography sx={{ whiteSpace: "pre-wrap" }}>
-          {logs || "No logs available."}
-        </Typography>
+        </AnimatePresence>
       </Box>
     </Paper>
   );
