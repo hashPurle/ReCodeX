@@ -8,6 +8,8 @@ from backend.engine.repair_loop import start_repair_session
 from backend.core.sandbox import execute_code
 from backend.core.validator import validate_code
 from backend.engine.patch_generator import generate_patch
+from backend.routers.chat import router as chat_router
+from backend.routers.patch import router as patch_router
 
 
 
@@ -25,6 +27,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include auxiliary routers (Chat + Patch)
+app.include_router(chat_router, prefix="/api")
+app.include_router(patch_router, prefix="")
+
+# Remove the inline /patch endpoint now that the router provides a proper version
 
 
 # ----------------------------------------------------------------------------
@@ -83,20 +91,8 @@ def run_code_endpoint(req: RunRequest):
     return result
 
 
-# ----------------------------------------------------------------------------
-#   PATCH ENDPOINT — (Frontend → generatePatch())
-# ----------------------------------------------------------------------------
-@app.post("/patch")
-async def create_patch_endpoint(req: PatchRequest):
-    print("[+] /patch called")
-
-    if not req.code:
-        raise HTTPException(status_code=400, detail="Code cannot be empty")
-
-    # generate improved code using LLM
-    new_code = await generate_patch(req.code, req.error)
-
-    return {"patch": new_code}
+# The /patch endpoint is provided by the routers/patch.py router which returns a normalized
+# PatchResponse with `patch`, `reasoning`, `fixed_code`, and `confidence`.
 
 
 # ----------------------------------------------------------------------------

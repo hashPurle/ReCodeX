@@ -6,7 +6,7 @@ import json
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "mistral" 
 
-async def generate_patch(code: str, error: str) -> str:
+async def generate_patch(code: str, error: str) -> dict:
     """
     Asks AI to fix the code and extracts ONLY the Python block.
     """
@@ -52,12 +52,24 @@ async def generate_patch(code: str, error: str) -> str:
                 # Priority 1: Look for ```python ... ``` blocks (Best Case)
                 match = re.search(r"```python(.*?)```", raw_response, re.DOTALL)
                 if match:
-                    return match.group(1).strip()
+                    fixed_code = match.group(1).strip()
+                    return {
+                        "patch": fixed_code,
+                        "response": raw_response,
+                        "prompt": prompt,
+                        "confidence": 0.0
+                    }
                 
                 # Priority 2: Look for generic ``` ... ``` blocks
                 match = re.search(r"```(.*?)```", raw_response, re.DOTALL)
                 if match:
-                    return match.group(1).strip()
+                    fixed_code = match.group(1).strip()
+                    return {
+                        "patch": fixed_code,
+                        "response": raw_response,
+                        "prompt": prompt,
+                        "confidence": 0.0
+                    }
                 
                 # Priority 3: Fallback (Chatty AI without markdown)
                 # We strip lines starting with "Here is", "Sure", "The code", etc.
@@ -68,12 +80,18 @@ async def generate_patch(code: str, error: str) -> str:
                     if not re.match(r"^(Here is|Sure|The code|This|In this|I have)", line, re.IGNORECASE):
                         clean_lines.append(line)
                 
-                return "\n".join(clean_lines).strip()
+                fixed_code = "\n".join(clean_lines).strip()
+                return {
+                    "patch": fixed_code,
+                    "response": raw_response,
+                    "prompt": prompt,
+                    "confidence": 0.0
+                }
 
             else:
                 print(f"Error from Ollama: {response.status_code}")
-                return code 
+                return { "patch": code, "response": f"Error {response.status_code}", "prompt": prompt, "confidence": 0.0 }
 
     except Exception as e:
         print(f"Connection Error: {str(e)}")
-        return code
+        return { "patch": code, "response": str(e), "prompt": prompt, "confidence": 0.0 }

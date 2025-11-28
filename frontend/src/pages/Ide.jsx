@@ -79,11 +79,18 @@ function Ide() {
     setIsFixing(false);
     setShowSuccess(true);
 
-    // Auto-switch to Diff view
-    if (engine.history.length) setViewMode("diff");
-    
-    // Auto-switch Right Panel to AI Reasoning
-    setActiveOutputTab('reasoning'); 
+    // Auto-switch to Diff view if we received patches
+    if (result?.history?.length > 1) {
+      setViewMode("diff");
+      setActiveOutputTab('reasoning');
+    } else if (result?.status === 'fixed' && result?.final_code) {
+      // If the code was fixed without patches showing (single step success), update editor
+      engine.loadCode(result.final_code);
+      setActiveOutputTab('terminal');
+    } else {
+      // fallback: show terminal
+      setActiveOutputTab('terminal');
+    }
   };
 
   return (

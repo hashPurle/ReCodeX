@@ -3,7 +3,7 @@ import { Box, TextField, IconButton, Avatar } from '@mui/material';
 import { Send, Bot, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ChatInterface = () => {
+const ChatInterface = ({ context = {} }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([
     { id: 1, sender: 'ai', text: "Hello! I analyzed your code. Ask me anything about the error or the fix!" }
@@ -18,6 +18,17 @@ const ChatInterface = () => {
     }
   }, [messages, isTyping]);
 
+  // Seed chat with AI reasoning context only when context.reasoning first appears
+  useEffect(() => {
+    if (!context?.reasoning) return;
+    const r = context.reasoning;
+    const summary = typeof r === 'string' ? r : (r.response || 'AI reasoning available');
+    const prompt = typeof r === 'object' && r.prompt ? `\nPrompt used: ${r.prompt}` : '';
+    setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'ai', text: `${summary}${prompt}` }]);
+    // We only want to seed once — not every time context changes slightly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context?.reasoning]);
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -31,31 +42,15 @@ const ChatInterface = () => {
 
     try {
       // --- OPTION A: REAL BACKEND CALL (Uncomment if Backend is ready) ---
-      /*
       const response = await fetch('http://localhost:8000/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText })
+        body: JSON.stringify({ message: userText, context })
       });
       const data = await response.json();
-      const aiResponse = data.reply; 
-      */
+      const aiResponse = data.reply || "";
 
-      // --- OPTION B: SMART SIMULATION (For Hackathon Demo) ---
-      // This switches responses based on keywords so it feels "real"
-      let aiResponse = "I'm not sure about that details. Can you be more specific?";
-      
-      const lowerInput = userText.toLowerCase();
-      
-      if (lowerInput.includes("error") || lowerInput.includes("bug")) {
-        aiResponse = "The main error was an **IndexError**. The loop `range(len(arr) + 1)` tries to access an index that doesn't exist. Arrays are 0-indexed.";
-      } else if (lowerInput.includes("fix") || lowerInput.includes("solve")) {
-        aiResponse = "I fixed it by changing the loop range to `range(len(arr))`. This ensures we stop exactly at the last valid element.";
-      } else if (lowerInput.includes("thank")) {
-        aiResponse = "You're welcome! Let me know if you need help optimizing this further.";
-      } else if (lowerInput.includes("complexity") || lowerInput.includes("time")) {
-        aiResponse = "This code runs in **O(n)** time complexity since it iterates through the list once.";
-      }
+
 
       // Simulate network delay
       setTimeout(() => {

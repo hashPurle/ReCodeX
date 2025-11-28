@@ -7,7 +7,7 @@ import { tabContentVar } from '../animations/variants';
 import Typewriter from './effects/Typewriter';
 import ChatInterface from './ChatInterface'; // <--- NEW IMPORT
 
-const OutputPanel = ({ activeTab }) => {
+const OutputPanel = ({ activeTab, logs, reasoning, error }) => {
 
   // Configuration for the Header Label
   const headerConfig = {
@@ -71,12 +71,9 @@ const OutputPanel = ({ activeTab }) => {
               initial="hidden" animate="visible" exit="exit"
               style={{ padding: 16, height: '100%', overflowY: 'auto' }}
             >
-              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72', lineHeight: 1.6 }}>
+              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#ff7b72', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                 <span style={{ color: '#8b949e' }}>$ python3 script.py</span><br/>
-                &gt; TypeError: cannot unpack non-iterable int object<br/>
-                &gt; at line 14, in bubble_sort<br/>
-                &gt; <br/>
-                &gt; Process exited with code 1
+                {logs || (error ? `> ${error}` : `> Process not run yet`)}
               </Box>
             </motion.div>
           )}
@@ -89,12 +86,23 @@ const OutputPanel = ({ activeTab }) => {
               initial="hidden" animate="visible" exit="exit"
               style={{ padding: 16, height: '100%', overflowY: 'auto' }}
             >
-              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', lineHeight: 1.6 }}>
-                 <Typewriter 
-                   speed={15}
-                   delay={200}
-                   text="> [INFO] Analyzing execution stack trace... | > [WARN] Identified variable type mismatch at line 14. | > [THINKING] The user is trying to swap variables but used assignment. | > [ACTION] Generating Patch #1: Implementing tuple swap. | > [SUCCESS] Patch generated. Ready to review."
-                 />
+              <Box sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#a371f7', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {/* Show reasoning (could be raw AI response or object) */}
+                {typeof reasoning === 'string' && reasoning ? (
+                  <Typewriter speed={15} delay={200} text={reasoning} />
+                ) : reasoning?.response ? (
+                  <Box>
+                    {error && (
+                      <Box sx={{ fontSize: '0.8rem', color: '#ff7b72', mb: 1 }}>Error: <code style={{ fontFamily: 'JetBrains Mono' }}>{error}</code></Box>
+                    )}
+                    <Typewriter speed={15} delay={200} text={reasoning.response} />
+                    {reasoning.prompt && (
+                      <Box mt={1} sx={{ fontSize: '0.7rem', color: '#8b949e' }}>Prompt used: <code style={{fontFamily: 'JetBrains Mono'}}>{reasoning.prompt}</code></Box>
+                    )}
+                  </Box>
+                ) : (
+                  <Box sx={{ color: '#8b949e' }}>No AI reasoning yet</Box>
+                )}
               </Box>
             </motion.div>
           )}
@@ -107,7 +115,7 @@ const OutputPanel = ({ activeTab }) => {
               initial="hidden" animate="visible" exit="exit"
               style={{ height: '100%' }}
             >
-              <ChatInterface />
+              <ChatInterface context={{ reasoning, logs, error }} />
             </motion.div>
           )}
 

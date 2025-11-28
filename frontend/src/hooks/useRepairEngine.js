@@ -65,7 +65,7 @@ export function useRepairEngine() {
       next: newCode,
       stdout: res.stdout || "",
       stderr: res.stderr || "",
-      ai_reasoning: res.ai_reasoning || "",
+      ai_reasoning: res.reasoning || res.ai_reasoning || "",
       rejected: false,
     };
 
@@ -98,22 +98,33 @@ export function useRepairEngine() {
       return;
     }
 
-    const backendSteps = res.history || [];
-    const fixedHistory = [];
-
-    for (let i = 0; i < backendSteps.length; i++) {
-      const cur = backendSteps[i];
-      const prevCode = i === 0 ? code : backendSteps[i - 1].code;
-      const nextCode = cur.code;
-
-      fixedHistory.push({
-        prev: prevCode,
-        next: nextCode,
-        stdout: cur.stdout || "",
-        stderr: cur.stderr || "",
-        ai_reasoning: cur.ai_reasoning || "",
+    let fixedHistory = [];
+    if (res?.patches && res.patches.length) {
+      // Use backend `patches` that explicitly represent prev/next pairs
+      fixedHistory = res.patches.map((p) => ({
+        prev: p.prev || "",
+        next: p.next || "",
+        stdout: p.stdout || "",
+        stderr: p.stderr || "",
+        ai_reasoning: p.ai_reasoning || "",
         rejected: false,
-      });
+      }));
+    } else {
+      const backendSteps = res.history || [];
+      // Build patches from consecutive steps: each patch is prev=step[i].code -> next=step[i+1].code
+      for (let i = 0; i < backendSteps.length - 1; i++) {
+        const curr = backendSteps[i];
+        const next = backendSteps[i + 1];
+
+        fixedHistory.push({
+          prev: curr.code || "",
+          next: next.code || "",
+          stdout: next.stdout || "",
+          stderr: next.stderr || "",
+          ai_reasoning: curr.ai_reasoning || next.ai_reasoning || "",
+          rejected: false,
+        });
+      }
     }
 
     setHistory(fixedHistory);
@@ -151,6 +162,8 @@ export function useRepairEngine() {
     const nextIndex = index + 1 < history.length ? index + 1 : null;
     setSelectedIndex(nextIndex);
 
+    // Re-run the code to refresh logs + error
+    runCurrentCode(newCode).then(() => {});
     return true;
     
   };

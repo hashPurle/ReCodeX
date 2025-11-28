@@ -62,7 +62,8 @@ export async function runCode(code) {
    /patch
 --------------------------------*/
 export async function generatePatch(logs, code) {
-  const resp = await postJson("/patch", { logs, code });
+  // Backend expects `stack_trace` or `error` fields in the PatchRequest model
+  const resp = await postJson("/patch", { code, stack_trace: logs, error: logs });
 
   if (resp.status === 200) return resp.data;
 
