@@ -7,6 +7,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   IconButton,
+  Divider, // Added Divider
 } from "@mui/material";
 
 import {
@@ -16,6 +17,8 @@ import {
   GitCompare,
   Sparkles,
   ArrowLeft,
+  Terminal,      // Added
+  MessageSquare, // Added for Chat
 } from "lucide-react";
 
 import Editor from "@monaco-editor/react";
@@ -36,7 +39,9 @@ function Ide() {
   const navigate = useNavigate();
   const engine = useRepairEngine();
 
+  // --- STATE ---
   const [viewMode, setViewMode] = useState("editor");
+  const [activeOutputTab, setActiveOutputTab] = useState("terminal"); // NEW: Controls Right Panel
   const [isFixing, setIsFixing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -58,7 +63,7 @@ function Ide() {
   // --------------- Load File From Sidebar ---------------
   const handleFileSelect = (newCode) => {
     const safe = newCode || "";
-    setCode(safe);
+    // setCode(safe); // Removed local setCode, engine handles it
     engine.loadCode(safe);
     setViewMode("editor");
   };
@@ -76,6 +81,9 @@ function Ide() {
 
     // Auto-switch to Diff view
     if (engine.history.length) setViewMode("diff");
+    
+    // Auto-switch Right Panel to AI Reasoning
+    setActiveOutputTab('reasoning'); 
   };
 
   return (
@@ -126,22 +134,55 @@ function Ide() {
             </Typography>
           </Box>
 
-          {/* Center: Editor / Diff */}
-          <ToggleButtonGroup
-            value={viewMode}
-            exclusive
-            onChange={(e, v) => v && setViewMode(v)}
-          >
-            <ToggleButton value="editor">
-              <Code size={16} style={{ marginRight: 6 }} /> Code
-            </ToggleButton>
+          {/* CENTER: Combined Toggles */}
+          <Box display="flex" alignItems="center" gap={2}>
+            
+            {/* Group 1: Editor / Diff */}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(e, v) => v && setViewMode(v)}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 2 }, 
+                '& .Mui-selected': { bgcolor: '#1f6feb !important', color: 'white !important' } 
+              }}
+            >
+              <ToggleButton value="editor">
+                <Code size={16} style={{ marginRight: 6 }} /> Code
+              </ToggleButton>
 
-            <ToggleButton value="diff" disabled={!engine.history.length}>
-              <GitCompare size={16} style={{ marginRight: 6 }} /> Diff
-            </ToggleButton>
-          </ToggleButtonGroup>
+              <ToggleButton value="diff" disabled={!engine.history.length}>
+                <GitCompare size={16} style={{ marginRight: 6 }} /> Diff
+              </ToggleButton>
+            </ToggleButtonGroup>
 
-          {/* Auto Repair */}
+            <Divider orientation="vertical" flexItem sx={{ bgcolor: '#30363d', mx: 1 }} />
+
+            {/* Group 2: Output View (Terminal / AI / Chat) -- NEW */}
+            <ToggleButtonGroup
+              value={activeOutputTab}
+              exclusive
+              onChange={(e, v) => v && setActiveOutputTab(v)}
+              size="small"
+              sx={{ 
+                '& .MuiToggleButton-root': { color: '#8b949e', borderColor: '#30363d', px: 2 }, 
+                '& .Mui-selected': { 
+                   bgcolor: activeOutputTab === 'reasoning' ? '#a371f7 !important' : 
+                            activeOutputTab === 'chat' ? '#238636 !important' : '#30363d !important',
+                   color: 'white !important', 
+                   borderColor: 'transparent'
+                } 
+              }}
+            >
+              <ToggleButton value="terminal"><Terminal size={16} style={{ marginRight: 8 }} /> Terminal</ToggleButton>
+              <ToggleButton value="reasoning"><Sparkles size={16} style={{ marginRight: 8 }} /> AI Logic</ToggleButton>
+              <ToggleButton value="chat"><MessageSquare size={16} style={{ marginRight: 8 }} /> Chat</ToggleButton>
+            </ToggleButtonGroup>
+
+          </Box>
+
+          {/* Auto Repair Button */}
           <Button
             variant="contained"
             startIcon={!isFixing && <Play size={18} />}
@@ -168,7 +209,7 @@ function Ide() {
             <Sidebar onFileSelect={handleFileSelect} />
           </Panel>
 
-          <PanelResizeHandle><div className="ResizeHandleInner" /></PanelResizeHandle>
+          <PanelResizeHandle className="ResizeHandleOuter"><div className="ResizeHandleInner" /></PanelResizeHandle>
 
           {/* Editor / Diff */}
           <Panel>
@@ -180,8 +221,9 @@ function Ide() {
                   height="100%"
                   theme="vs-dark"
                   defaultLanguage="python"
-                  value={engine.code}   // IMPORTANT
+                  value={engine.code} 
                   onChange={(v) => engine.loadCode(v || "")}
+                  options={{ minimap: { enabled: false }, fontSize: 15, fontFamily: 'JetBrains Mono', padding: { top: 24 } }}
                 />
 
               ) : (
@@ -202,11 +244,12 @@ function Ide() {
             </Box>
           </Panel>
 
-          <PanelResizeHandle><div className="ResizeHandleInner" /></PanelResizeHandle>
+          <PanelResizeHandle className="ResizeHandleOuter"><div className="ResizeHandleInner" /></PanelResizeHandle>
 
-          {/* Terminal + Reasoning */}
+          {/* Terminal + Reasoning + Chat */}
           <Panel defaultSize={25} minSize={15}>
             <OutputPanel
+              activeTab={activeOutputTab} // Pass the active tab state
               logs={engine.logs}
               error={engine.error}
               reasoning={engine.aiReasoning}
